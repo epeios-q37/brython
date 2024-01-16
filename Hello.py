@@ -1,10 +1,4 @@
 import atlastk
-from browser import aio
-
-HEAD = """
-<title>Hello, World! | Zelbinium</title>
-<link rel="icon" type="image/png" href="https://zelbinium.q37.info/Avatar.png" />
-"""
 
 BODY = """
 <fieldset>
@@ -34,7 +28,7 @@ async def acSubmit(dom):
   await dom.focus("input")
 
 async def acDisplay(dom):
-  await dom.setValue("output", f"Bonjour, {text}!")
+  await dom.setValue("output", f"Hello, {text}!")
 
 CALLBACKS = {
   "": acConnect,
@@ -42,4 +36,4 @@ CALLBACKS = {
   "Display": acDisplay
 }
 
-atlastk.launch(CALLBACKS, headContent=HEAD)    
+atlastk.launch(CALLBACKS)    
