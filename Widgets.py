@@ -40,7 +40,7 @@ async def acConnect(dom):
 
 
 def dlShape(flavors):
-  html = atlastk.create_HTML()
+  html = atlastk.createHTML()
 
   for flavor in flavors:
     html.pushTag("option")
