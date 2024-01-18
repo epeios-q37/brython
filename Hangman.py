@@ -92,7 +92,7 @@ async def acSubmit(core, dom, id):
     await dom.alert("\nYou've run out of guesses. \nYou had " + str(core.errors) +
           " errors and " + str(len(core.correctGuesses)) + " correct guesses. " +
           "\n\nThe word was '" + core.secretWord + "'.")
-    reset(core, dom)
+    await reset(core, dom)
 
 
 async def acRestart(core, dom):
