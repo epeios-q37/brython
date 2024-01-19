@@ -33,6 +33,8 @@ BODY = """
  <input id="Input" data-xdh-onevent="Submit" placeholder="Enter a name here" value="World"/>
  <button data-xdh-onevent="Submit">Hello</button>
  <hr/>
+ Output shared between all sessions.
+ <hr/>
  <fieldset>
   <output id="Output"></output>
  </fieldset>
