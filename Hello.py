@@ -1,16 +1,5 @@
 import atlastk
 
-BODY = """
-<fieldset>
-<input id="input" maxlength="20" placeholder="Enter a name here" type="text"
-xdh:onevent="Submit" value="World"/>
-<button xdh:onevent="Submit">Submit</button>
-<hr/>
-<fieldset>
-<output id="output"></output>
-</fieldset>
-</fieldset>
-"""
 text = ""
 
 async def acConnect(dom):
@@ -27,8 +16,10 @@ async def acSubmit(dom):
   await dom.setValue("input", "")
   await dom.focus("input")
 
+
 async def acDisplay(dom):
   await dom.setValue("output", f"Hello, {text}!")
+
 
 CALLBACKS = {
   "": acConnect,
@@ -36,4 +27,22 @@ CALLBACKS = {
   "Display": acDisplay
 }
 
-atlastk.launch(CALLBACKS)    
+
+HEAD = """
+  <title>Hello</title>
+"""
+
+BODY = """
+<fieldset>
+<input id="input" maxlength="20" placeholder="Enter a name here" type="text"
+xdh:onevent="Submit" value="World"/>
+<button xdh:onevent="Submit">Submit</button>
+<hr/>
+<fieldset>
+<output id="output"></output>
+</fieldset>
+</fieldset>
+"""
+
+
+atlastk.launch(CALLBACKS, headContent=HEAD)    
