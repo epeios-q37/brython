@@ -628,7 +628,7 @@ BODY = """
 </fieldset>
 """
 
-ucuq.launch("", "Black")
+ucuq.launch() # If no id given, using the one in teh config file.
 
 atlastk.launch(CALLBACKS, headContent=HEAD)
 
