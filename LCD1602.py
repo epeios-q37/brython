@@ -296,7 +296,7 @@ except:
 """
 
 BODY = """
-<fieldset style="display: flex;flex-direction: row">
+<fieldset style="display: flex;flex-direction: column">
   <fieldset style="display: flex;flex-direction: row">
     <span id="ConfigBox" style="display: flex;flex-direction: column">
       <label style="display: flex;justify-content: space-between">
