@@ -15,8 +15,8 @@
   "UCUq": [
     "Config",
     "Piano",
-    "Leds",
-    "Matrix",
+    "WS2812",
+    "HT16K33",
     "Tweak"
   ]
 }
