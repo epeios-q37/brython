@@ -32,7 +32,7 @@ O_WIDTH = "TrueWidth"
 
 
 async def getParams():
-  return (await ucuq.renderAwait(f"getParams({pwm.getObject()})")) if onDuty else None
+  return (await ucuq.commitAwait(f"getParams({pwm.getObject()})")) if onDuty else None
 
 
 async def getDuty(dom):
@@ -194,7 +194,7 @@ async def acConnect(dom):
   await ucuq.handleATKAwait(dom)
   
   ucuq.addCommand(MC_INIT)
-  ucuq.render()
+  ucuq.commit()
   
   await dom.inner("", BODY)
   await updateDutyBox(dom)
