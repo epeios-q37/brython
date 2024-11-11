@@ -164,7 +164,7 @@ async def initPWM(inputs):
   if inputs["Mode"] == M_STRAIGHT:
     pwm = ucuq.PWM(inputs[I_PIN], inputs[I_FREQ])
   elif inputs["Mode"] == M_PCA9685:
-    pwm = ucuq.PCA9685Channel(ucuq.PCA9685(inputs[I_SDA], inputs[I_SCL], inputs[I_FREQ]), inputs[I_CHANNEL])
+    pwm = ucuq.PWM_PCA9685(ucuq.PCA9685(inputs[I_SDA], inputs[I_SCL], inputs[I_FREQ]), inputs[I_CHANNEL])
   else:
     raise Exception("Unknown mode!!!")
 
