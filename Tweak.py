@@ -14,6 +14,7 @@ I_MODE = "Mode"
 I_PIN = "Pin"
 I_SDA = "SDA"
 I_SCL = "SCL"
+I_SOFT = "Soft"
 I_CHANNEL = "Channel"
 I_FREQ = "Freq"
 I_DUTY = "Duty"
@@ -52,7 +53,7 @@ def convert(value, converter):
 
 
 async def getInputs(dom):
-  values = await dom.getValues([I_MODE, I_PIN, I_SDA, I_SCL, I_CHANNEL, I_FREQ, I_DUTY, I_RATIO, I_WIDTH])
+  values = await dom.getValues([I_MODE, I_PIN, I_SDA, I_SCL, I_CHANNEL, I_SOFT, I_FREQ, I_DUTY, I_RATIO, I_WIDTH])
 
   return {
     I_MODE: values[I_MODE],
@@ -60,6 +61,7 @@ async def getInputs(dom):
     I_SDA: convert(values[I_SDA], int),
     I_SCL: convert(values[I_SCL], int),
     I_CHANNEL: convert(values[I_CHANNEL], int),
+    I_SOFT: True if values[I_SOFT] == "true" else False,
     I_FREQ: convert(values[I_FREQ], int),
     I_DUTY: {
       "Type": values[I_DUTY],
@@ -129,8 +131,8 @@ async def updateDutyBox(dom, params = None):
         I_WIDTH: "",
         I_RATIO: params[1] if onDuty else ""})
     case "Width":
-      await dom.enableElement("Width")
-      await dom.disableElement("Ratio")
+      await dom.enableElement(I_WIDTH)
+      await dom.disableElement(I_RATIO)
       if onDuty:
         await dom.setValues({
           I_RATIO: "",
@@ -157,14 +159,14 @@ async def updateDuties(dom, params = None):
     })
 
 
-
 async def initPWM(inputs):
   global pwm
 
-  if inputs["Mode"] == M_STRAIGHT:
+  if inputs[I_MODE] == M_STRAIGHT:
     pwm = ucuq.PWM(inputs[I_PIN], inputs[I_FREQ])
-  elif inputs["Mode"] == M_PCA9685:
-    pwm = ucuq.PWM_PCA9685(ucuq.PCA9685(inputs[I_SDA], inputs[I_SCL], inputs[I_FREQ]), inputs[I_CHANNEL])
+  elif inputs[I_MODE] == M_PCA9685:
+    i2c = ucuq.SoftI2C if inputs[I_SOFT] else ucuq.I2C
+    pwm = ucuq.PWM_PCA9685(ucuq.PCA9685(i2c(inputs[I_SDA], inputs[I_SCL]), inputs[I_FREQ]), inputs[I_CHANNEL])
   else:
     raise Exception("Unknown mode!!!")
 
@@ -176,7 +178,7 @@ async def initPWM(inputs):
   return await getParams()
 
 async def setFreq(freq):
-  pwm.freq(freq)
+  pwm.setFreq(freq)
   return await getParams()
 
 
@@ -414,16 +416,23 @@ BODY = """
           <fieldset>
             <label>
               <span>SDA:</span>
-              <input id="SDA" type="number" size="2" value="13" min="0" max="99">
+              <input id="SDA" type="number" size="2" value="0" min="0" max="99">
             </label>
             <label>
               <span>SCL:</span>
-              <input id="SCL" type="number" size="2" value="14" min="0" max="99">
+              <input id="SCL" type="number" size="2" value="1" min="0" max="99">
             </label>
-            <label>
-              <span>Channel:</span>
-              <input id="Channel" size="2" value="0">
-            </label>
+            <br>
+            <span style="display: flex; justify-content: space-between">
+              <label>
+                <span>Soft:</span>
+                <input id="Soft" checked="" type="checkbox">
+              </label>
+              <label>
+                <span>Channel:</span>
+                <input id="Channel" size="2" value="0">
+              </label>
+            </span>
           </fieldset>
         </div>
     </fieldset>

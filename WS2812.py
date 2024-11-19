@@ -1,7 +1,19 @@
-import atlastk, ucuq
+import atlastk, ucuq, random
+
+RB_MAX = 30
+RB_DELAY = .04
 
 ws2812 = None
 onDuty = False
+
+def rainbow():
+  v =  random.randint(0, 5)
+  for i in range(RB_MAX * 7):
+    ws2812.fill(ucuq.rbShadeFade(v, i, RB_MAX)).write()
+    ucuq.sleep(RB_DELAY)
+  ws2812.fill([0]*3).write()
+  ucuq.commit() 
+
 
 def convert_(hex):
   return int(int(hex,16) * 100 / 256)
@@ -39,6 +51,12 @@ async def launchAwait(dom, pin, count):
     onDuty = False
   else:
     onDuty = True
+
+
+async def resetAwait(dom):
+  await dom.executeVoid(f"colorWheel.rgb = [0, 0, 0]")
+  await dom.setValues(getAllValues_(0, 0, 0))
+  update_(0, 0, 0)    
 
 
 async def updateUIAwait(dom, onDuty):
@@ -143,10 +161,12 @@ async def acAdjust(dom):
   await dom.executeVoid(f"colorWheel.rgb = [{R},{G},{B}]")
   update_(R, G, B)
 
+async def acRainbow(dom):
+  await resetAwait(dom)
+  rainbow()
+
 async def acReset(dom):
-  await dom.executeVoid(f"colorWheel.rgb = [0, 0, 0]")
-  await dom.setValues(getAllValues_(0, 0, 0))
-  update_(0, 0, 0)
+  resetAwait(dom)
 
 def connect_(id):
   device = ucuq.UCUq()
@@ -164,6 +184,7 @@ CALLBACKS = {
   "Select": acSelect,
   "Slide": acSlide,
   "Adjust": acAdjust,
+  "Rainbow": acRainbow,
   "Reset": acReset
 }
 
@@ -345,7 +366,8 @@ BODY = """
         <span>&nbsp;</span>
         <input id="NB" xdh:onevent="Adjust" type="number" min="0" max="255" step="5" value="0" size="3">
       </label>
-      <div style="display: flex; justify-content: center;">
+      <div style="display: flex; justify-content: space-evenly;">
+        <button xdh:onevent="Rainbow">Rainbow</button>
         <button xdh:onevent="Reset">Reset</button>
       </div>
     </div>
