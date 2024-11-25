@@ -10,9 +10,7 @@ baseFreq = 440.0*math.pow(math.pow(2,1.0/12), -16)
 ratio = 0.5
 
 async def acConnect(dom):
-  await ucuq.handleATKAwait(dom)
-  
-  await dom.inner("", BODY)
+  await ucuq.ATKConnectAwait(dom, BODY)
 
 
 async def acPlay(dom,id):
@@ -50,7 +48,10 @@ async def acSetPin(dom, id):
     await dom.disableElement("UserPin")
     await dom.setValue("UserPin", pin)
   elif rawPin != "User":
-    pin = int(rawPin)
+    try:
+      pin = int(rawPin)
+    except:
+      pass
   else:
     await dom.enableElement("UserPin")
 
@@ -158,7 +159,7 @@ BODY = """
   <fieldset style="display: flex; justify-content: space-around">
     <fieldset>
       <legend>Pin</legend>
-      <select id="PredefinedPin" xdh:onevent="SetPin">
+      <select id="PredefinedPin" xdh:onevent="change|SetPin">
         <option value="User">User defined</option>
         <optgroup label="Freenove Bipedal Robot">
           <option value="Buzzer">Buzzer</option>

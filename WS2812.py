@@ -90,18 +90,16 @@ async def updateUIAwait(dom, onDuty):
         raise Exception("Unknown preset!")
 
 async def acConnect(dom):
-  label = (await ucuq.handleATKAwait(dom))['kit']['label']
+  id = ucuq.getKitId(await ucuq.ATKConnectAwait(dom, BODY))
 
-  await dom.inner("", BODY)
   await dom.executeVoid("setColorWheel()")
   await dom.executeVoid(f"colorWheel.rgb = [0, 0, 0]")
 
   if not onDuty:
-    match label:
-      case "Freenove.Robot.Bipedal.RPIPicoW":
-        await dom.setValue("Preset", "Bipedal")
-      case "Freenove.Robot.Dog.ESP32":
-        await dom.setValue("Preset", "Dog")
+    if id == ucuq.K_BIPEDAL:
+      await dom.setValue("Preset", "Bipedal")
+    elif id == ucuq.K_DOG:
+      await dom.setValue("Preset", "Dog")
 
   await updateUIAwait(dom, False)
 
@@ -166,7 +164,7 @@ async def acRainbow(dom):
   rainbow()
 
 async def acReset(dom):
-  resetAwait(dom)
+  await resetAwait(dom)
 
 def connect_(id):
   device = ucuq.UCUq()

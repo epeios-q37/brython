@@ -122,9 +122,7 @@ async def updateUIAwait(dom, onDuty):
         
 
 async def acConnect(dom):
-  label = (await ucuq.handleATKAwait(dom))['kit']['label']
-
-  await dom.inner("", BODY)
+  id = ucuq.getKitId(await ucuq.ATKConnectAwait(dom, BODY))
 
   await drawAwait(dom, "")
 
@@ -133,9 +131,8 @@ async def acConnect(dom):
   await drawLittleMatricesAwait(dom,MATRICES)
 
   if not onDuty:
-    match label:
-      case "Freenove.Robot.Bipedal.RPIPicoW":
-        await dom.setValue("Preset", "Bipedal")
+    if id == ucuq.K_BIPEDAL:
+      await dom.setValue("Preset", "Bipedal")
 
   await updateUIAwait(dom, onDuty)
 
