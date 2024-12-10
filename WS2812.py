@@ -33,7 +33,7 @@ SPOKEN_COLORS =  {
 
 def rainbow():
   v =  random.randint(0, 5)
-  for i in range(0, RB_MAX * 7, step = 1+int(RB_MAX/20)):
+  for i in range(0, RB_MAX * 7, 1+int(RB_MAX/20)):
     ws2812.fill(ucuq.rbShadeFade(v, i, RB_MAX)).write()
     ucuq.sleep(RB_DELAY)
   ws2812.fill([0]*3).write()
