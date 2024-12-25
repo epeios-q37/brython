@@ -333,7 +333,7 @@ async def acNew():
   cLCD.clear()
 
   seq = random.choice("RGBY")
-  cLCD.clear().moveTo(0,0).putString("Reproduce the").moveTo(0,1).putString("sequence")
+  cLCD.clear().moveTo(0,0).putString("Reproduce the").moveTo(0,1).putString("sequence...")
   number(len(seq))
   ucuq.sleep(.75)
   play(seq)
@@ -359,7 +359,7 @@ async def acClick(dom, id):
       cLCD.clear()
       userSeq = ""
       seq += random.choice("RGBY")
-      cLCD.clear().moveTo(0,0).putString("Reproduce the").moveTo(0,1).putString("sequence")
+      cLCD.clear().moveTo(0,0).putString("Reproduce the").moveTo(0,1).putString("sequence...")
       number(len(seq))
       ucuq.sleep(.75)
       play(seq)
@@ -392,28 +392,28 @@ HEAD = """
 <script>
   var SpeechRecognition = SpeechRecognition || webkitSpeechRecognition;
   var SpeechRecognitionEvent = SpeechRecognitionEvent || webkitSpeechRecognitionEvent;
-  
+
   var recognition = new SpeechRecognition();
-  
+
   recognition.continuous = false;
   recognition.lang = 'fr-FR';
   recognition.interimResults = false;
   recognition.maxAlternatives = 5;
-  
+
   function launch() {
     recognition.start();
     console.log('Ready to receive a color command.');
   };
-  
-  recognition.onresult = function(event) {
+
+  recognition.onresult = function (event) {
     var color = event.results[0][0].transcript;
     console.log('Confidence: ' + event.results[0][0].confidence);
     results = event.results[0];
     array = [];
     for (const cle in results) {
       if (results.hasOwnProperty(cle)) {
-          console.log(`${cle}: ${results[cle].transcript}`);
-          array.push(results[cle].transcript);
+        console.log(`${cle}: ${results[cle].transcript}`);
+        array.push(results[cle].transcript);
       }
       console.log(array)
     }
@@ -421,200 +421,206 @@ HEAD = """
     document.getElementById("Color").value = JSON.stringify(array);
     launchEvent("test|BUTTON|click||(Display)");
   };
-  
-  recognition.onspeechend = function() {
+
+  recognition.onspeechend = function () {
     recognition.start();
   };
-  
-  recognition.onnomatch = function(event) {
+
+  recognition.onnomatch = function (event) {
     console.warn("I didn't recognise that color.");
   };
-  
-  recognition.onerror = function(event) {
+
+  recognition.onerror = function (event) {
     console.err('Error occurred in recognition: ' + event.error);
   };
 </script>
 <style>
-#outer-circle {
-  background: #385a94;
-  border-radius: 50%;
-  height: 400px;
-  width: 400px;
-  position: relative;
-  border-style: solid;
-  border-width: 10px;
-  margin: auto;
-  box-shadow: 8px 8px 15px 5px #888888;
-}
+  #outer-circle {
+    background: #385a94;
+    border-radius: 50%;
+    height: 400px;
+    width: 400px;
+    position: relative;
+    border-style: solid;
+    border-width: 10px;
+    margin: auto;
+    box-shadow: 8px 8px 15px 5px #888888;
+  }
 
-#G {
-  position: absolute;
-  height: 200px;
-  width: 200px;
-  border-radius: 200px 0 0 0;
-  -moz-border-radius: 200px 0 0 0;
-  -webkit-border-radius: 200px 0 0 0;
-  background: darkgreen;
-  top: 50%;
-  left: 50%;
-  margin: -200px 0px 0px -200px;
-  border-style: solid;
-  border-width: 5px;
-  box-sizing: border-box;
-  -moz-box-sizing: border-box;
-  -webkit-box-sizing: border-box;
-}
+  #G {
+    position: absolute;
+    height: 200px;
+    width: 200px;
+    border-radius: 200px 0 0 0;
+    -moz-border-radius: 200px 0 0 0;
+    -webkit-border-radius: 200px 0 0 0;
+    background: darkgreen;
+    top: 50%;
+    left: 50%;
+    margin: -200px 0px 0px -200px;
+    border-style: solid;
+    border-width: 5px;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+  }
 
-#R {
-  position: absolute;
-  height: 200px;
-  width: 200px;
-  border-radius: 0 200px 0 0;
-  -moz-border-radius: 0 200px 0 0;
-  -webkit-border-radius: 0 200px 0 0;
-  background: darkred;
-  top: 50%;
-  left: 50%;
-  margin: -200px 0px 0px 0px;
-  border-style: solid;
-  border-width: 5px;
-  box-sizing: border-box;
-  -moz-box-sizing: border-box;
-  -webkit-box-sizing: border-box;
-}
+  #R {
+    position: absolute;
+    height: 200px;
+    width: 200px;
+    border-radius: 0 200px 0 0;
+    -moz-border-radius: 0 200px 0 0;
+    -webkit-border-radius: 0 200px 0 0;
+    background: darkred;
+    top: 50%;
+    left: 50%;
+    margin: -200px 0px 0px 0px;
+    border-style: solid;
+    border-width: 5px;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+  }
 
-#Y {
-  position: absolute;
-  height: 200px;
-  width: 200px;
-  border-radius: 0 0 0 200px;
-  -moz-border-radius: 0 0 0 200px;
-  -webkit-border-radius: 0 0 0 200px;
-  background: goldenrod;
-  top: 50%;
-  left: 50%;
-  margin: 0px -200px 0px -200px;
-  border-style: solid;
-  border-width: 5px;
-  box-sizing: border-box;
-  -moz-box-sizing: border-box;
-  -webkit-box-sizing: border-box;
-}
+  #Y {
+    position: absolute;
+    height: 200px;
+    width: 200px;
+    border-radius: 0 0 0 200px;
+    -moz-border-radius: 0 0 0 200px;
+    -webkit-border-radius: 0 0 0 200px;
+    background: goldenrod;
+    top: 50%;
+    left: 50%;
+    margin: 0px -200px 0px -200px;
+    border-style: solid;
+    border-width: 5px;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+  }
 
-#B {
-  position: absolute;
-  height: 200px;
-  width: 200px;
-  border-radius: 0 0 200px 0;
-  -moz-border-radius: 0 0 200px 0;
-  -webkit-border-radius: 0 0 200px 0;
-  background: darkblue;
-  top: 50%;
-  left: 50%;
-  margin: 0px 0px -200px 0px;
-  border-style: solid;
-  border-width: 5px;
-  box-sizing: border-box;
-  -moz-box-sizing: border-box;
-  -webkit-box-sizing: border-box;
-}
+  #B {
+    position: absolute;
+    height: 200px;
+    width: 200px;
+    border-radius: 0 0 200px 0;
+    -moz-border-radius: 0 0 200px 0;
+    -webkit-border-radius: 0 0 200px 0;
+    background: darkblue;
+    top: 50%;
+    left: 50%;
+    margin: 0px 0px -200px 0px;
+    border-style: solid;
+    border-width: 5px;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+  }
 
-#inner-circle {
-  position: absolute;
-  background: grey;
-  border-radius: 50%;
-  height: 200px;
-  width: 200px;
-  border-style: solid;
-  border-width: 10px;
-  top: 50%;
-  left: 50%;
-  margin: -100px 0px 0px -100px;
-  box-sizing: border-box;
-  -moz-box-sizing: border-box;
-  -webkit-box-sizing: border-box;
-}
+  #inner-circle {
+    position: absolute;
+    background: grey;
+    border-radius: 50%;
+    height: 200px;
+    width: 200px;
+    border-style: solid;
+    border-width: 10px;
+    top: 50%;
+    left: 50%;
+    margin: -100px 0px 0px -100px;
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+  }
 
-button {
-  font-size: xx-large;
-}
+  button {
+    font-size: xx-large;
+  }
 
-/* Switch begin */
-.switch-container {
-  display: flex;
-}
+  /****************/
+  /* Switch begin */
+  /****************/
 
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 30px;
-  height: 17px;
-  margin: auto;
-}
+  .switch-container {
+    display: flex;
+  }
 
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 30px;
+    height: 17px;
+    margin: auto;
+  }
 
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #ccc;
-  -webkit-transition: .4s;
-  transition: .4s cubic-bezier(0,1,0.5,1);
-  border-radius: 4px;
-}
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
 
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 13px;
-  width: 13px;
-  left: 3px;
-  bottom: 2px;
-  background-color: white;
-  -webkit-transition: .4s;
-  transition: .4s cubic-bezier(0,1,0.5,1);
-  border-radius: 3px;
-}
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    -webkit-transition: .4s;
+    transition: .4s cubic-bezier(0, 1, 0.5, 1);
+    border-radius: 4px;
+  }
 
-input:checked + .slider {
-  background-color: #52c944;
-}
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 13px;
+    width: 13px;
+    left: 3px;
+    bottom: 2px;
+    background-color: white;
+    -webkit-transition: .4s;
+    transition: .4s cubic-bezier(0, 1, 0.5, 1);
+    border-radius: 3px;
+  }
 
-input:focus + .slider {
-  box-shadow: 0 0 4px #7efa70;
-}
+  input:checked+.slider {
+    background-color: #52c944;
+  }
 
-input:checked + .slider:before {
-  -webkit-transform: translateX(10px);
-  -ms-transform: translateX(10px);
-  transform: translateX(10px);
-}
+  input:focus+.slider {
+    box-shadow: 0 0 4px #7efa70;
+  }
 
-/* Rounded sliders */
-.slider.round {
-  border-radius: 17px;
-}
+  input:checked+.slider:before {
+    -webkit-transform: translateX(10px);
+    -ms-transform: translateX(10px);
+    transform: translateX(10px);
+  }
 
-.slider.round:before {
-  border-radius: 50%;
-}
+  /* Rounded sliders */
+  .slider.round {
+    border-radius: 17px;
+  }
 
-#round {
-  border-radius: 17px;
-}
+  .slider.round:before {
+    border-radius: 50%;
+  }
 
-#round:before {
-  border-radius: 50%;
-}
-/* Switch end */
+  #round {
+    border-radius: 17px;
+  }
+
+  #round:before {
+    border-radius: 50%;
+  }
+
+  /**************/
+  /* Switch end */
+  /**************/
 </style>
 """
 
@@ -692,4 +698,5 @@ BODY = """
 </fieldset>
 """
 
-atlastk.launch(CALLBACKS, headContent = HEAD)
+atlastk.launch(CALLBACKS, headContent=HEAD)
+

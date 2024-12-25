@@ -255,6 +255,7 @@ CALLBACKS = {
   "Reset": acReset
 }
 
+
 HEAD = """
 <script type="text/javascript">
   function setColorWheel() {
@@ -301,6 +302,10 @@ HEAD = """
 <script src="https://cdn.jsdelivr.net/npm/reinvented-color-wheel@0.4.0">
 </script>
 <style>
+  /****************/
+  /* Switch begin */
+  /****************/
+
   .switch-container {
     display: flex;
   }
@@ -367,32 +372,36 @@ HEAD = """
   .slider.round:before {
     border-radius: 50%;
   }
+
+  /**************/
+  /* Switch end */
+  /**************/
 </style>
 <script>
   var SpeechRecognition = SpeechRecognition || webkitSpeechRecognition;
   var SpeechRecognitionEvent = SpeechRecognitionEvent || webkitSpeechRecognitionEvent;
-  
+
   var recognition = new SpeechRecognition();
-  
+
   recognition.continuous = false;
   recognition.lang = 'fr-FR';
   recognition.interimResults = false;
   recognition.maxAlternatives = 5;
-  
+
   function launch() {
     recognition.start();
     console.log('Ready to receive a color command.');
   };
-  
-  recognition.onresult = function(event) {
+
+  recognition.onresult = function (event) {
     var color = event.results[0][0].transcript;
     console.log('Confidence: ' + event.results[0][0].confidence);
     results = event.results[0];
     array = [];
     for (const cle in results) {
       if (results.hasOwnProperty(cle)) {
-          console.log(`${cle}: ${results[cle].transcript}`);
-          array.push(results[cle].transcript);
+        console.log(`${cle}: ${results[cle].transcript}`);
+        array.push(results[cle].transcript);
       }
       console.log(array)
     }
@@ -400,19 +409,19 @@ HEAD = """
     document.getElementById("Color").value = JSON.stringify(array);
     launchEvent("test|BUTTON|click||(Display)");
   };
-  
-  recognition.onspeechend = function() {
+
+  recognition.onspeechend = function () {
     recognition.start();
   };
-  
-  recognition.onnomatch = function(event) {
+
+  recognition.onnomatch = function (event) {
     console.warn("I didn't recognise that color.");
   };
-  
-  recognition.onerror = function(event) {
+
+  recognition.onerror = function (event) {
     console.err('Error occurred in recognition: ' + event.error);
   };
-  </script>
+</script>
 """
 
 BODY = """
@@ -509,6 +518,7 @@ BODY = """
     </fieldset>
   </fieldset>
   <input id="Color" type="hidden">
-  """
+"""
 
 atlastk.launch(CALLBACKS, headContent=HEAD)
+

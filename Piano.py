@@ -114,86 +114,93 @@ CALLBACKS = {
 }
 
 HEAD = """
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/beautiful-piano@0.0.6/styles.min.css"></link>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/beautiful-piano@0.0.6/styles.min.css">
+</link>
 <script src="https://cdn.jsdelivr.net/npm/beautiful-piano@0.0.6/dist/piano.min.js"></script>
 <style>
-/* Switch begin */
-.switch-container {
-	padding-left: 10px;
-  display: flex;
-}
+  /****************/
+  /* Switch begin */
+  /****************/
 
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 30px;
-  height: 17px;
-  margin: auto;
-}
+  .switch-container {
+    padding-left: 10px;
+    display: flex;
+  }
 
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 30px;
+    height: 17px;
+    margin: auto;
+  }
 
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #ccc;
-  -webkit-transition: .4s;
-  transition: .4s cubic-bezier(0,1,0.5,1);
-  border-radius: 4px;
-}
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
 
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 13px;
-  width: 13px;
-  left: 3px;
-  bottom: 2px;
-  background-color: white;
-  -webkit-transition: .4s;
-  transition: .4s cubic-bezier(0,1,0.5,1);
-  border-radius: 3px;
-}
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    -webkit-transition: .4s;
+    transition: .4s cubic-bezier(0, 1, 0.5, 1);
+    border-radius: 4px;
+  }
 
-input:checked + .slider {
-  background-color: #52c944;
-}
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 13px;
+    width: 13px;
+    left: 3px;
+    bottom: 2px;
+    background-color: white;
+    -webkit-transition: .4s;
+    transition: .4s cubic-bezier(0, 1, 0.5, 1);
+    border-radius: 3px;
+  }
 
-input:focus + .slider {
-  box-shadow: 0 0 4px #7efa70;
-}
+  input:checked+.slider {
+    background-color: #52c944;
+  }
 
-input:checked + .slider:before {
-  -webkit-transform: translateX(10px);
-  -ms-transform: translateX(10px);
-  transform: translateX(10px);
-}
+  input:focus+.slider {
+    box-shadow: 0 0 4px #7efa70;
+  }
 
-/* Rounded sliders */
-.slider.round {
-  border-radius: 17px;
-}
+  input:checked+.slider:before {
+    -webkit-transform: translateX(10px);
+    -ms-transform: translateX(10px);
+    transform: translateX(10px);
+  }
 
-.slider.round:before {
-  border-radius: 50%;
-}
+  /* Rounded sliders */
+  .slider.round {
+    border-radius: 17px;
+  }
 
-#round {
-  border-radius: 17px;
-}
+  .slider.round:before {
+    border-radius: 50%;
+  }
 
-#round:before {
-  border-radius: 50%;
-}
-/* Switch end */
+  #round {
+    border-radius: 17px;
+  }
+
+  #round:before {
+    border-radius: 50%;
+  }
+
+  /**************/
+  /* Switch end */
+  /**************/
 </style>
 """
 
@@ -297,11 +304,11 @@ BODY = """
       <input id="Pin" type="number" size="2" min="1" max="99">
     </fieldset>
     <span class="switch-container">
-       <label class="switch">
-        <input id="Switch"  type="checkbox" xdh:onevent="Switch">
+      <label class="switch">
+        <input id="Switch" type="checkbox" xdh:onevent="Switch">
         <span class="slider round"></span>
-       </label>
-    </span>        
+      </label>
+    </span>
     <fieldset style="display: flex; align-items: center;">
       <legend>Ratio</legend>
       <input id="RatioSlide" xdh:onevent="SetRatio" type="range" min="0" max="1" step=".025" value=".5">
@@ -313,3 +320,4 @@ BODY = """
 """
 
 atlastk.launch(CALLBACKS, headContent=HEAD)
+

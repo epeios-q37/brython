@@ -401,87 +401,92 @@ def getParams(pwm, prescale):
 
 HEAD = """
 <style>
-output {
-  padding-left: 5px;
-}
+  output {
+    padding-left: 5px;
+  }
 
-/* Switch begin */
-.switch-container {
-	padding-left: 10px;
-}
+  /****************/
+  /* Switch begin */
+  /****************/
 
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 30px;
-  height: 17px;
-  margin: auto;
-}
+  .switch-container {
+    padding-left: 10px;
+  }
 
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 30px;
+    height: 17px;
+    margin: auto;
+  }
 
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #ccc;
-  -webkit-transition: .4s;
-  transition: .4s cubic-bezier(0,1,0.5,1);
-  border-radius: 4px;
-}
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
 
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 13px;
-  width: 13px;
-  left: 3px;
-  bottom: 2px;
-  background-color: white;
-  -webkit-transition: .4s;
-  transition: .4s cubic-bezier(0,1,0.5,1);
-  border-radius: 3px;
-}
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    -webkit-transition: .4s;
+    transition: .4s cubic-bezier(0, 1, 0.5, 1);
+    border-radius: 4px;
+  }
 
-input:checked + .slider {
-  background-color: #52c944;
-}
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 13px;
+    width: 13px;
+    left: 3px;
+    bottom: 2px;
+    background-color: white;
+    -webkit-transition: .4s;
+    transition: .4s cubic-bezier(0, 1, 0.5, 1);
+    border-radius: 3px;
+  }
 
-input:focus + .slider {
-  box-shadow: 0 0 4px #7efa70;
-}
+  input:checked+.slider {
+    background-color: #52c944;
+  }
 
-input:checked + .slider:before {
-  -webkit-transform: translateX(10px);
-  -ms-transform: translateX(10px);
-  transform: translateX(10px);
-}
+  input:focus+.slider {
+    box-shadow: 0 0 4px #7efa70;
+  }
 
-/* Rounded sliders */
-.slider.round {
-  border-radius: 17px;
-}
+  input:checked+.slider:before {
+    -webkit-transform: translateX(10px);
+    -ms-transform: translateX(10px);
+    transform: translateX(10px);
+  }
 
-.slider.round:before {
-  border-radius: 50%;
-}
+  /* Rounded sliders */
+  .slider.round {
+    border-radius: 17px;
+  }
 
-#round {
-  border-radius: 17px;
-}
+  .slider.round:before {
+    border-radius: 50%;
+  }
 
-#round:before {
-  border-radius: 50%;
-}
-/* Switch end */
+  #round {
+    border-radius: 17px;
+  }
 
+  #round:before {
+    border-radius: 50%;
+  }
+
+  /**************/
+  /* Switch end */
+  /**************/
 </style>
 <style id="HideStraight">
   .straight {
@@ -489,13 +494,15 @@ input:checked + .slider:before {
   }
 </style>
 <style>
-label.prescale-offset {
-  display: flex;
-  justify-content: right;
-}
+  label.prescale-offset {
+    display: flex;
+    justify-content: right;
+  }
 </style>
 <style id="HidePCA9685">
-  .pca9685, .prescale-offset, label.prescale-offset {
+  .pca9685,
+  .prescale-offset,
+  label.prescale-offset {
     display: none;
   }
 </style>
@@ -521,10 +528,10 @@ BODY = """
         </label>
         <span class="switch-container">
           <label class="switch">
-            <input id="Switch"  type="checkbox" xdh:onevent="Switch">
+            <input id="Switch" type="checkbox" xdh:onevent="Switch">
             <span class="slider round"></span>
           </label>
-        </span>        
+        </span>
       </div>
       <fieldset id="SettingsBox" style="display: flex; ">
         <legend>Settings</legend>
@@ -623,3 +630,4 @@ BODY = """
 """
 
 atlastk.launch(CALLBACKS, headContent=HEAD)
+

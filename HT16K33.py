@@ -298,6 +298,7 @@ MATRICES = (
   "00003ffc40025ffa2ff417e8081007e",
 )
 
+
 HEAD = """
 <script>
   function patchHexaInput() {
@@ -490,7 +491,7 @@ BODY = """
         <option value="2">2 Hz</option>
       </select>
     </label>
-    <input xdh:onevent="Mirror" type="checkbox"/>
+    <input xdh:onevent="Mirror" type="checkbox" />
   </fieldset>
   <fieldset id="MatricesBox" style="display: grid; grid-template-columns: auto auto auto auto;">
   </fieldset>
@@ -498,3 +499,4 @@ BODY = """
 """
 
 atlastk.launch(CALLBACKS, headContent=HEAD)
+
