@@ -417,6 +417,10 @@ HEAD = """
     border-radius: 3px;
   }
 
+  input+.slider {
+    background-color: #c95245;
+  }  
+  
   input:checked+.slider {
     background-color: #52c944;
   }
