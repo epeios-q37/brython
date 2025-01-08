@@ -524,5 +524,5 @@ BODY = """
   <input id="Color" type="hidden">
 """
 
-atlastk.launch(CALLBACKS, headContent=HEAD)
+atlastk.launch(CALLBACKS if "CALLBACKS" in globals() else None, globals=globals(), headContent=HEAD)
 
