@@ -19,6 +19,7 @@
     "WS2812",
     "HT16K33",
     "Tweak",
-    "Simon"
+    "Simon",
+    "Servos"
   ]
 }
