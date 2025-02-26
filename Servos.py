@@ -1,5 +1,6 @@
 import os, io, json, datetime
 import ucuq, atlastk
+
 from browser import ajax, aio
 
 class Lock:
@@ -40,7 +41,6 @@ async def get_github_file_content(file_path):
   await lock.acquire()
 
   return result
-
 
 MACRO_MARKER_ = '$'
 
@@ -145,17 +145,14 @@ async def atkConnect(dom):
 async def atkTest():
   reset_()
   step = int(STEP * DEFAULT_SPEED / 2)
-  ucuq.commit()
   for servo in servos:
     ucuq.servoMoves([[servos[servo], 15]], step)
     ucuq.servoMoves([[servos[servo], -15]], step)
     ucuq.servoMoves([[servos[servo], 0]], step)
   
-  ucuq.commit()
 
 async def atkReset(dom):
   reset_()
-  ucuq.commit()
 
 
 def getToken(stream):
@@ -333,34 +330,12 @@ async def atkExecute(dom, id):
 
   if await dom.getValue("Reset") == "true":
     reset_()
-    ucuq.commit()
 
   await execute(dom, moves)
-  ucuq.commit()
 
 
 async def atkSave(dom):
   await dom.alert("Not implemented yet in Brython version!")
-  return
-
-  name = await dom.getValue("Name").strip()
-
-  if not ( content := await dom.getValue("Content") ):
-    await dom.alert("There is no content to save!")
-  else:
-    macros["_"] = {"Description": "Internal use", "Content": content}
-
-    if name == "":
-        await dom.alert("Please give a name for the macro!")
-    elif not name.isidentifier() or name == '_':
-      await dom.alert(f"'{name}' is not a valid macro name!")
-    elif not name in macros or await dom.getValue("Ask") == "true" or await dom.confirm(f"Overwrite existing macro of name '{name}'?"):
-      macros[name] = {"Description": await dom.getValue("Description"), "Content": content}
-
-      with open(f"Macros/Latest.json", "w") as file: 
-        file.write(json.dumps(macros, indent=2)) # type: ignore
-
-    await displayMacros(dom)
 
 
 def expand(moves):
@@ -424,21 +399,11 @@ async def atkHideContents(dom):
   
 async def atkSaveToFile(dom):
   await dom.alert("Not implemented yet in Brython version!")
-  return
-
-  with open(f"Macros/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json", "w") as file: 
-    file.write(json.dumps(macros, indent=2)) # type: ignore
-  
-  await updateFileList(dom)
 
 
 async def atkLoadFromFile(dom):
   global macros
 
-  """
-  with open(f"Macros/{await dom.getValue('Files')}", "r") as file:
-    macros = json.load(file)
-  """
 
   macros = json.loads(await get_github_file_content(f"demos/Servos/Macros/{await dom.getValue('Files')}.json"))
 
@@ -479,12 +444,10 @@ def getServoSetup(key, subkey, preset, motor):
 async def getServosSetups(target):
   setups = {}
 
-  """
-  with open("servos.json", "r") as file:
-    config = json.load(file)[target]
-  """
+
 
   config = json.loads(await get_github_file_content("demos/Servos/servos.json"))[target]
+
 
   preset = config["Preset"]
   motors = config["Motors"]
@@ -534,10 +497,7 @@ async def createServos(deviceId):
       raise Exception("Unknown hardware mode!")
     servos[setup] = ucuq.Servo(pwm, ucuq.Servo.Specs(specs["u16_min"], specs["u16_max"], specs["range"]), tweak = ucuq.Servo.Tweak(tweak["angle"],tweak["offset"], tweak["invert"]))
 
-  ucuq.commit()
-
-
-HEAD = """
+ATK_HEAD = """
 <style>
 .macro {
   display: grid;
@@ -629,5 +589,5 @@ BODY = """
   
 """
 
-atlastk.launch(CALLBACKS if "CALLBACKS" in globals() else None, globals=globals(), headContent=HEAD)
+atlastk.launch(globals=globals())
 

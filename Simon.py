@@ -234,7 +234,7 @@ def beep(note, delay = 0.29, sleep = 0.01):
 def playJingle(jingle):
   prevButton = ""
   prevPrevButton = ""
-  number(None)
+#  number(None)
   for n in jingle:
     while True:
       button = random.choice(list(BUTTONS.keys())) 
@@ -279,11 +279,14 @@ async def atkSwitch(dom, id):
 
     print(ringOffset)
 
+    ucuq.setCommitBehavior(ucuq.CB_MANUAL)
+
     cRing = ucuq.WS2812(inputs[W_H_RING_PIN], inputs[W_H_RING_COUNT])
     cOLED = ucuq.SSD1306_I2C(128, 64, ucuq.I2C(inputs[W_H_OLED_SDA], inputs[W_H_OLED_SCL], soft = inputs[W_H_OLED_SOFT]))
     cLCD = ucuq.HD44780_I2C(ucuq.I2C(inputs[W_H_LCD_SDA], inputs[W_H_LCD_SCL], soft = inputs[W_H_LCD_SOFT]), 2, 16).backlightOff()
     if inputs[W_H_BUZZER_ON]:
-      cBuzzer = ucuq.PWM(inputs[W_H_BUZZER_PIN])
+#      ucuq.PWM(inputs[W_H_BUZZER_PIN], freq=50, u16 = 0).deinit()
+      cBuzzer = ucuq.PWM(inputs[W_H_BUZZER_PIN], freq=50, u16 = 0)
     else:
       cBuzzer = ucuq.Nothing()
     cBuzzer.setFreq(50).setNS(0)
@@ -337,6 +340,8 @@ async def atkDisplay(dom):
 
 async def atkNew():
   global seq
+  
+  number(None)
 
   cLCD.clear()\
   .backlightOn()\
@@ -371,6 +376,8 @@ async def atkClick(dom, id):
   if seq.startswith(userSeq):
     if len(seq) <= len(userSeq):
       cLCD.moveTo(0,0).putString(STRINGS[4])
+      number(None)
+      cOLED.draw("03c00c30181820044c32524a80018001824181814812442223c410080c3003c0", 16, mul=4, ox=32).show()
       playJingle(SUCCESS_JINGLE)
       ucuq.sleep(0.5)
       cLCD.clear()
@@ -378,6 +385,7 @@ async def atkClick(dom, id):
       userSeq = ""
       seq += random.choice("RGBY")
       cLCD.clear().moveTo(0,0).putString(STRINGS[2]).moveTo(0,1).putString(STRINGS[3])
+      number(None)
       number(len(seq))
       ucuq.sleep(.75)
       play(seq)
@@ -387,6 +395,8 @@ async def atkClick(dom, id):
     cLCD.moveTo(0,0).putString(STRINGS[5]).moveTo(0,1).putString(STRINGS[6])
     number(len(seq))
     cBuzzer.setFreq(30).setU16(50000)
+    number(None)
+    cOLED.fill(0).draw("03c00c30181820044c3280018001824181814002400227e410080c3003c0", 16, mul=4, ox=32).show()
     ucuq.sleep(1)
     cBuzzer.setU16(0)
     ucuq.commit()
@@ -395,7 +405,7 @@ async def atkClick(dom, id):
 
   ucuq.commit()
 
-HEAD = """
+ATK_HEAD = """
 <style>
   #outer-circle {
     background: #385a94;
@@ -664,5 +674,5 @@ BODY = """
 </fieldset>
 """
 
-atlastk.launch(CALLBACKS if "CALLBACKS" in globals() else None, globals=globals(), headContent=HEAD)
+atlastk.launch(globals=globals())
 

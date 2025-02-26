@@ -35,7 +35,7 @@ async def setPin(dom, preset):
     await dom.setValue(W_PIN, PINS[preset])
 
 
-async def acConnect(dom):
+async def atkConnect(dom):
   id = ucuq.getKitId(await ucuq.ATKConnectAwait(dom, BODY))
 
   if id == ucuq.K_BIPEDAL:
@@ -50,22 +50,20 @@ async def acConnect(dom):
   await setPin(dom, preset)  
 
 
-async def acPlay(dom,id):
+async def atkPlay(dom,id):
   global pwm
 
   if onDuty:
     freq = int(baseFreq*math.pow(math.pow(2,1.0/12), int(id)))
     pwm.setU16(int(ratio*65535))
     pwm.setFreq(freq)
-    ucuq.commit()
     ucuq.sleep(.5)
     pwm.setU16(0)
-    ucuq.commit()
   else:
     await dom.alert("Please switch on!")
 
 
-async def acSetRatio(dom, id):
+async def atkSetRatio(dom, id):
   global ratio
 
   ratio = float(await dom.getValue(id))
@@ -73,13 +71,13 @@ async def acSetRatio(dom, id):
   await dom.setValue(W_RATIO_SLIDE if id == W_RATIO_VALUE else W_RATIO_SLIDE, ratio)
 
 
-async def acPreset(dom, id):
+async def atkPreset(dom, id):
   global onDuty, pwm
 
   await setPin(dom, await dom.getValue(id))
 
 
-async def acSwitch(dom, id):
+async def atkSwitch(dom, id):
   global onDuty, pwm
 
   state = await dom.getValue(id) == "true"
@@ -93,8 +91,7 @@ async def acSwitch(dom, id):
       await dom.alert("No or bad pin value!")
       await dom.setValue(id, "false")
     else:
-      pwm = ucuq.PWM(pin)
-      ucuq.commit()
+      pwm = ucuq.PWM(pin, freq=50, u16=0)
       onDuty = True
   else:
     onDuty = False
@@ -104,16 +101,7 @@ async def acSwitch(dom, id):
   else:
     await dom.enableElement(W_PIN_BOX)
 
-
-CALLBACKS = {
-  "": acConnect,
-  "Preset": acPreset,
-  "Switch": acSwitch,
-  "Play": acPlay,
-  "SetRatio": acSetRatio
-}
-
-HEAD = """
+ATK_HEAD = """
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/beautiful-piano@0.0.6/styles.min.css">
 </link>
 <script src="https://cdn.jsdelivr.net/npm/beautiful-piano@0.0.6/dist/piano.min.js"></script>
@@ -323,5 +311,5 @@ BODY = """
 </fieldset>
 """
 
-atlastk.launch(CALLBACKS if "CALLBACKS" in globals() else None, globals=globals(), headContent=HEAD)
+atlastk.launch(globals=globals())
 

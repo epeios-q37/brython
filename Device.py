@@ -1,14 +1,10 @@
 import atlastk, ucuq, json
 
-async def acConnect(dom):
+async def atkConnect(dom):
   infos = await ucuq.ATKConnectAwait(dom, BODY)
   await dom.setValue("Infos", json.dumps(infos, indent=2))
 
-CALLBACKS = {
-  "": acConnect
-}
-
-HEAD = """
+ATK_HEAD = """
 
 """
 
@@ -18,5 +14,5 @@ BODY = """
 </fieldset>
 """
 
-atlastk.launch(CALLBACKS if "CALLBACKS" in globals() else None, globals=globals(), headContent=HEAD)
+atlastk.launch(globals=globals())
 

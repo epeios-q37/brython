@@ -257,7 +257,7 @@ async def setWidth(width):
   return await getParams()
 
 
-async def acConnect(dom):
+async def atkConnect(dom):
   preset = PRESETS[ucuq.getKitId(await ucuq.ATKConnectAwait(dom, BODY))]
 
   await updateSettingsUIFollowingPreset_(dom, preset)
@@ -265,10 +265,10 @@ async def acConnect(dom):
   await dom.setValue(W_PRESET, preset)
   
   ucuq.addCommand(MC_INIT)
-  ucuq.commit()
   
   await updateDutyBox(dom)
   await dom.enableElement(W_HARDWARE_BOX)
+
 
 async def updateSettingsUIFollowingMode_(dom, mode):
   if mode == M_NONE:
@@ -292,16 +292,17 @@ async def updateSettingsUIFollowingPreset_(dom, preset):
   await dom.setValues(setting)
 
 
-async def acPreset(dom, id):
+async def atkPreset(dom, id):
   preset = await dom.getValue(id)
 
   await updateSettingsUIFollowingPreset_(dom, preset)
 
 
-async def acMode(dom, id):
+async def atkMode(dom, id):
   await updateSettingsUIFollowingMode_(dom, await dom.getValue(id))
+  
 
-async def acSwitch(dom, id):
+async def atkSwitch(dom, id):
   global state
 
   if await dom.getValue(id) == "true":
@@ -321,11 +322,11 @@ async def acSwitch(dom, id):
     await dom.enableElements([W_SETTINGS_BOX, W_PRESET])
 
 
-async def acSelect(dom):
+async def atkSelect(dom):
   await updateDutyBox(dom)
 
 
-async def acFreq(dom, id):
+async def atkFreq(dom, id):
   if state:
     freq = await dom.getValue(id)
 
@@ -336,7 +337,8 @@ async def acFreq(dom, id):
     else:
       await updateDuties(dom, await setFreq(freq))
 
-async def acOffset(dom, id):
+
+async def atkOffset(dom, id):
   if state:
     offset = await dom.getValue(id)
 
@@ -348,7 +350,7 @@ async def acOffset(dom, id):
       await updateDuties(dom, await setOffset(offset))
 
 
-async def acRatio(dom, id):
+async def atkRatio(dom, id):
   if state:
     value = await dom.getValue(id)
 
@@ -360,11 +362,11 @@ async def acRatio(dom, id):
       await updateDuties(dom, await setRatio(ratio))
 
 
-async def acRatioStep(dom, id):
+async def atkRatioStep(dom, id):
   await dom.setAttribute(W_RATIO, "step", await dom.getValue(id)),
 
 
-async def acWidth(dom, id):
+async def atkWidth(dom, id):
   if state:
     value = await dom.getValue(id)
 
@@ -376,30 +378,15 @@ async def acWidth(dom, id):
       await updateDuties(dom, await setWidth(int(1000000 * width)))
 
 
-async def acWidthStep(dom, id):
+async def atkWidthStep(dom, id):
   await dom.setAttribute(W_WIDTH, "step", await dom.getValue(id)),
-
-
-CALLBACKS = {
-  "": acConnect,
-  "Preset": acPreset,
-  "Mode": acMode,
-  "Switch": acSwitch,
-  "Freq": acFreq,
-  "Offset": acOffset,
-  "Select": acSelect,
-  "Ratio": acRatio,
-  "RatioStep": acRatioStep,
-  "Width": acWidth,
-  "WidthStep": acWidthStep
-}
 
 MC_INIT = """
 def getParams(pwm, prescale):
   return [pwm.freq(), pwm.duty_u16(), pwm.duty_ns(), pwm.prescale() if prescale else 0]
 """
 
-HEAD = """
+ATK_HEAD = """
 <style>
   output {
     padding-left: 5px;
@@ -633,5 +620,5 @@ BODY = """
 </fieldset>
 """
 
-atlastk.launch(CALLBACKS if "CALLBACKS" in globals() else None, globals=globals(), headContent=HEAD)
+atlastk.launch(globals=globals())
 
