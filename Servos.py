@@ -133,7 +133,7 @@ async def updateFileList(dom, kit = ucuq.K_UNKNOWN):
   await dom.inner("Files", html)
 
 
-async def atkConnect(dom):
+async def atkt(dom):
   infos = await ucuq.ATKConnectAwait(dom, BODY)
 
   await createServos(ucuq.getDeviceId(infos))

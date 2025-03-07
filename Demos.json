@@ -3,7 +3,6 @@
     "Hello",
     "Hellos",
     "Messages",
-    "Hangman",
     "Flooder",
     "Tortoise",
     "TicTacToe",
@@ -18,6 +17,7 @@
     "Piano",
     "WS2812",
     "HT16K33",
+    "Hangman",
     "Tweak",
     "Simon",
     "Servos"
