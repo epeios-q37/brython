@@ -1,18 +1,7 @@
+from itertools import count
 import atlastk, ucuq, random, json
 
 RB_DELAY = .05
-
-ws2812 = None
-ws2812Limiter = 0
-onDuty = False
-oledDIY = None
-
-# Presets
-P_USER = "User"
-P_BIPEDAL = "Bipedal"
-P_DOG = "Dog"
-P_DIY = "DIY"
-P_WOKWI = "Wokwi"
 
 SPOKEN_COLORS =  {
   "rouge": [255, 0, 0],
@@ -35,18 +24,19 @@ SPOKEN_COLORS =  {
 }
 
 
+ws2812 = None
+lcd = None
+matrix = None
+
+
 def rainbow():
   v =  random.randint(0, 5)
   i = 0
   while i < 7 * ws2812Limiter:
-    ws2812.fill(ucuq.rbShadeFade(v, int(i), ws2812Limiter)).write()
+    update_(*ucuq.rbShadeFade(v, int(i), ws2812Limiter), ws2812Limiter)
     ucuq.sleep(RB_DELAY)
     i += ws2812Limiter / 20
-  ws2812.fill([0]*3).write()
-
-
-def convert_(hex):
-  return int(int(hex,16) * 100 / 256)
+  update_(0, 0, 0, ws2812Limiter)
 
 
 def getValues_(target, R, G, B):
@@ -69,151 +59,114 @@ def getAllValues_(R, G, B):
   return getNValues_(R, G, B) | getSValues_(R, G, B)
 
 
-def update_(r, g, b):
-  if ws2812:
-    ws2812.fill([int(r), int(g), int(b)]).write()
-    if oledDIY:
-      oledDIY.fill(0).text(f"R: {r}", 0, 5).text(f"G: {g}", 0, 20).text(f"B: {b}", 0, 35).show()
+def drawBarOnMatrix(x, height):
+  y = int(height)
+
+  if y != 0:
+    matrix.rect(x * 6, 8 - y, x * 6 + 3, 7)
 
 
-async def launchAwait(dom, pin, count):
-  global ws2812, onDuty
+def update_(r, g, b, limit, color=""):
+  ws2812.fill(list(map(int, [r, g, b]))).write()
 
-  try:
-    ws2812 = ucuq.WS2812(pin, count)
-  except Exception as err:
-    await dom.alert(err)
-    onDuty = False
-  else:
-    onDuty = True
+  if matrix:
+    matrix.clear()
+    drawBarOnMatrix(0, int(r) * 8 / limit)
+    drawBarOnMatrix(1, int(g) * 8 / limit)
+    drawBarOnMatrix(2, int(b) * 8 / limit)
+    matrix.show()
+
+  if lcd:
+    lcd.moveTo(0,0)\
+      .putString("RGB: {} {} {}".format(*map(lambda s: str(s).rjust(3), [r, g, b])))\
+      .moveTo(0,1)\
+      .putString(color.center(16))
 
 
 async def resetAwait(dom):
   await dom.executeVoid(f"colorWheel.rgb = [0, 0, 0]")
   await dom.setValues(getAllValues_(0, 0, 0))
-  update_(0, 0, 0)    
+  update_(0, 0, 0, 255)    
 
 
-async def updateUIAwait(dom, onDuty):
-  ids = ["SlidersBox", "PickerBox"]
+def turnOnMain(hardware):
+  global ws2812, ws2812Limiter
 
-  if onDuty:
-    await dom.enableElements(ids)
-    await dom.disableElements(["HardwareBox", "Preset"])
-    await dom.setValue("Switch", "true")
+  if hardware:
+    pin = hardware["Pin"]
+    count = hardware["Count"]
+    ws2812Limiter = hardware["Limiter"]
+
+    ws2812 = ucuq.WS2812(pin, count)
   else:
-    await dom.disableElements(ids)
-    await dom.enableElements(["HardwareBox", "Preset"])
-    await dom.setValue("Switch", "false")
+    raise("Kit has no ws2812!")
+  
 
-    preset = await dom.getValue("Preset")
+def turnOnLCD(hardware):
+  global lcd
 
-    if preset == P_BIPEDAL:
-      await dom.setValues({
-        "Pin": ucuq.H_BIPEDAL["RGB"]["Pin"],
-        "Count": ucuq.H_BIPEDAL["RGB"]["Count"],
-        "Offset": ucuq.H_BIPEDAL["RGB"]["Offset"],
-        "Limiter": ucuq.H_BIPEDAL["RGB"]["Limiter"],
-      })
-    elif preset == P_DOG:
-      await dom.setValues({
-        "Pin": ucuq.H_DOG["RGB"]["Pin"],
-        "Count": ucuq.H_DOG["RGB"]["Count"],
-        "Offset": ucuq.H_DOG["RGB"]["Offset"],
-        "Limiter": ucuq.H_DOG["RGB"]["Limiter"],
-      })
-    elif preset == P_DIY:
-      await dom.setValues({
-        "Pin": ucuq.H_DIY_DISPLAYS["Ring"]["Pin"],
-        "Count": ucuq.H_DIY_DISPLAYS["Ring"]["Count"],
-        "Offset": ucuq.H_DIY_DISPLAYS["Ring"]["Offset"],
-        "Limiter": ucuq.H_DIY_DISPLAYS["Ring"]["Limiter"],
-      })
-    elif preset == P_WOKWI:
-      await dom.setValues({
-        "Pin": ucuq.H_WOKWI_DISPLAYS["Ring"]["Pin"],
-        "Count": ucuq.H_WOKWI_DISPLAYS["Ring"]["Count"],
-        "Offset": ucuq.H_WOKWI_DISPLAYS["Ring"]["Offset"],
-        "Limiter": ucuq.H_WOKWI_DISPLAYS["Ring"]["Limiter"],
-      })
-    elif preset != P_USER:
-      raise Exception("Unknown preset!")
+  if hardware:
+    soft = hardware["Soft"]
+    sda = hardware["SDA"]
+    scl = hardware["SCL"]
+
+    lcd = ucuq.HD44780_I2C(ucuq.I2C(sda, scl, soft=soft), 2, 16).backlightOn()
+  else:
+    lcd = ucuq.Nothing()
+
+
+def turnOnMatrix(hardware):
+  global matrix
+
+  if hardware:
+    soft = hardware["Soft"]
+    sda = hardware["SDA"]
+    scl = hardware["SCL"]
+
+    matrix = ucuq.HT16K33(ucuq.I2C(sda, scl, soft=soft)).clear().show()
+  else:
+    matrix = ucuq.Nothing()
 
 
 async def atk(dom):
-  global oledDIY
-  id = ucuq.getKitId(await ucuq.ATKConnectAwait(dom, BODY))
+  infos = await ucuq.ATKConnectAwait(dom, BODY)
 
   await dom.executeVoid("setColorWheel()")
   await dom.executeVoid(f"colorWheel.rgb = [0, 0, 0]")
 
-  if not onDuty:
-    if id == ucuq.K_BIPEDAL:
-      await dom.setValue("Preset", P_BIPEDAL)
-    elif id == ucuq.K_DOG:
-      await dom.setValue("Preset", P_DOG)
-    elif id == ucuq.K_DIY_DISPLAYS:
-      oledDIY = ucuq.SSD1306_I2C(128, 64, ucuq.I2C(ucuq.H_DIY_DISPLAYS["OLED"]["SDA"], ucuq.H_DIY_DISPLAYS["OLED"]["SCL"], soft = ucuq.H_DIY_DISPLAYS["OLED"]["Soft"]))
-      await dom.setValue("Preset", P_DIY)
-    elif id == ucuq.K_WOKWI_DISPLAYS:
-      oledDIY = ucuq.SSD1306_I2C(128, 64, ucuq.I2C(ucuq.H_WOKWI_DISPLAYS["OLED"]["SDA"], ucuq.H_WOKWI_DISPLAYS["OLED"]["SCL"], soft = ucuq.H_WOKWI_DISPLAYS["OLED"]["Soft"]))
-      await dom.setValue("Preset", P_WOKWI)
+  if not ws2812:
+    hardware = ucuq.getKitHardware(infos)
 
-  await updateUIAwait(dom, False)
-
-
-async def atkPreset(dom):
-  await updateUIAwait(dom, onDuty)
-
-
-async def atkSwitch(dom, id):
-  global onDuty, ws2812Limiter
-
-  state = (await dom.getValue(id)) == "true"
-
-  if state:
-    await updateUIAwait(dom, state)
-
-    try:
-      pin, count, ws2812Limiter = (int(value.strip()) for value in (await dom.getValues(["Pin", "Count", "Limiter"])).values())
-    except:
-      await dom.alert("No or bad value for Pin/Count!")
-      await updateUIAwait(dom, False)
-    else:
-      await launchAwait(dom, pin, count)
-  else:
-    onDuty = False
-
-  await updateUIAwait(dom, onDuty)
+    turnOnMain(ucuq.getHardware(hardware, ("Ring", "RGB")))
+    turnOnMatrix(ucuq.getHardware(hardware, "Matrix"))
+    turnOnLCD(ucuq.getHardware(hardware, "LCD"))
 
 
 async def atkSelect(dom):
-  if onDuty:
-    R, G, B = (await dom.getValues(["rgb-r", "rgb-g", "rgb-b"])).values()
-    await dom.setValues(getAllValues_(R, G, B))
-    update_(R, G, B)
-  else:
-    await dom.executeVoid(f"colorWheel.rgb = [0,0,0]")  
+  R, G, B = (await dom.getValues(["rgb-r", "rgb-g", "rgb-b"])).values()
+  await dom.setValues(getAllValues_(R, G, B))
+  update_(R, G, B, 255)
 
 
 async def atkSlide(dom):
   (R,G,B) = (await dom.getValues(["SR", "SG", "SB"])).values()
   await dom.setValues(getNValues_(R, G, B))
   await dom.executeVoid(f"colorWheel.rgb = [{R},{G},{B}]")
-  update_(R, G, B)
+  update_(R, G, B, 255)
 
 
 async def atkAdjust(dom):
   (R,G,B) = (await dom.getValues(["NR", "NG", "NB"])).values()
   await dom.setValues(getSValues_(R, G, B))
   await dom.executeVoid(f"colorWheel.rgb = [{R},{G},{B}]")
-  update_(R, G, B)
+  update_(R, G, B, 255)
 
 
 async def atkListen(dom):
   await dom.executeVoid("launch()")
 
-  
+
+# Launched by the JS 'launch()' script.
 async def atkDisplay(dom):
   colors = json.loads(await dom.getValue("Color"))
 
@@ -223,9 +176,7 @@ async def atkDisplay(dom):
       r, g, b = [ws2812Limiter * c // 255 for c in SPOKEN_COLORS[color]]
       await dom.setValues(getAllValues_(r, g, b))
       await dom.executeVoid(f"colorWheel.rgb = [{r},{g},{b}]")
-      update_(r, g, b)
-      if oledDIY:
-        oledDIY.text(color, 0, 50).show()
+      update_(r, g, b, ws2812Limiter, color)
       break
 
 
@@ -284,84 +235,21 @@ ATK_HEAD = """
 <script src="https://cdn.jsdelivr.net/npm/reinvented-color-wheel@0.4.0">
 </script>
 <style>
-  /****************/
-  /* Switch begin */
-  /****************/
-
-  .switch-container {
+  .view {
     display: flex;
+    flex-direction: column;
+    align-content: space-between
   }
 
-  .switch {
-    position: relative;
-    display: inline-block;
-    width: 30px;
-    height: 17px;
-    margin: auto;
+  .view {
+    display: flex;
+    flex-direction: column;
+    align-content: space-between
   }
 
-  .switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
+  .hide {
+    display: none
   }
-
-  .slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    -webkit-transition: .4s;
-    transition: .4s cubic-bezier(0, 1, 0.5, 1);
-    border-radius: 4px;
-  }
-
-  .slider:before {
-    position: absolute;
-    content: "";
-    height: 13px;
-    width: 13px;
-    left: 3px;
-    bottom: 2px;
-    background-color: white;
-    -webkit-transition: .4s;
-    transition: .4s cubic-bezier(0, 1, 0.5, 1);
-    border-radius: 3px;
-  }
-
-  input+.slider {
-    background-color: #c95245;
-  }
-  
-  input:checked+.slider {
-    background-color: #52c944;
-  }
-
-  input:focus+.slider {
-    box-shadow: 0 0 4px #7efa70;
-  }
-
-  input:checked+.slider:before {
-    -webkit-transform: translateX(10px);
-    -ms-transform: translateX(10px);
-    transform: translateX(10px);
-  }
-
-  /* Rounded sliders */
-  .slider.round {
-    border-radius: 17px;
-  }
-
-  .slider.round:before {
-    border-radius: 50%;
-  }
-
-  /**************/
-  /* Switch end */
-  /**************/
 </style>
 <script>
   var SpeechRecognition = SpeechRecognition || webkitSpeechRecognition;
@@ -401,7 +289,7 @@ ATK_HEAD = """
   };
 
   recognition.onnomatch = function (event) {
-    console.warn("I didn't recognise that color.");
+    console.warn("I didn't recognize that color.");
   };
 
   recognition.onerror = function (event) {
@@ -424,76 +312,32 @@ BODY = """
 </div>
 <fieldset>
   <legend>WS2012</legend>
-  <fieldset>
-    <fieldset style="display: flex; flex-direction: column;">
+  <div class="view">
+    <div>
+      <label style="display: flex; align-items: center;">
+        <span>R:&nbsp;</span>
+        <input id="SR" style="width: 100%" type="range" min="0" max="255" step="1" xdh:onevent="Slide" value="0">
+        <span>&nbsp;</span>
+        <input id="NR" xdh:onevent="Adjust" type="number" min="0" max="255" step="5" value="0" style="width: 5ch">
+      </label>
+      <label style="display: flex; align-items: center;">
+        <span>V:&nbsp;</span>
+        <input id="SG" style="width: 100%" type="range" min="0" max="255" step="1" xdh:onevent="Slide" value="0">
+        <span>&nbsp;</span>
+        <input id="NG" xdh:onevent="Adjust" type="number" min="0" max="255" step="5" value="0" style="width: 5ch">
+      </label>
+      <label style="display: flex; align-items: center;">
+        <span>B:&nbsp;</span>
+        <input id="SB" style="width: 100%" type="range" min="0" max="255" step="1" xdh:onevent="Slide" value="0">
+        <span>&nbsp;</span>
+        <input id="NB" xdh:onevent="Adjust" type="number" min="0" max="255" step="5" value="0" style="width: 5ch">
+      </label>
       <div style="display: flex; justify-content: space-evenly; margin-bottom: 5px;">
-        <select id="Preset" xdh:onevent="Preset">
-          <option value="User">User</option>
-          <optgroup label="Freenove">
-            <option value="Bipedal">Bipedal</option>
-            <option value="Dog">Dog (ESP32)</option>
-          </optgroup>
-          <option value="DIY">DIY</option>
-          <option value="Wokwi">Wokwi</option>
-        </select>
-        <span class="switch-container">
-          <label class="switch">
-            <input id="Switch" type="checkbox" xdh:onevent="Switch">
-            <span class="slider round"></span>
-          </label>
-        </span>
+        <button xdh:onevent="Listen">Listen</button>
+        <button xdh:onevent="Rainbow">Rainbow</button>
+        <button xdh:onevent="Reset">Reset</button>
       </div>
-      <fieldset id="HardwareBox" style="display: flex; flex-direction: row; justify-content: space-around">
-        <div style="display: flex; flex-direction: column; justify-content: space-between">
-          <label style="display: flex; justify-content: space-between">
-            <span>Pin:&nbsp;</span>
-            <input id="Pin" min="0" max="99" type="number">
-          </label>
-          <label style="display: flex; justify-content: space-between">
-            <span>Count:&nbsp;</span>
-            <input id="Count" min="0" max="999" type="number">
-          </label>
-        </div>
-        <div style="display: flex; flex-direction: column; justify-content: space-between">
-          <label style="display: flex; justify-content: space-between">
-            <span>Offset:&nbsp;</span>
-            <input id="Offset" min="-999" max="999" type="number">
-          </label>
-          <label style="display: flex; justify-content: space-between">
-            <span>Limiter:&nbsp;</span>
-            <input id="Limiter" min="0" max="255" type="number">
-          </label>
-        </div>
-      </fieldset>
-    </fieldset>
-    <fieldset id="SlidersBox" style="display: flex; flex-direction: column; align-content: space-between">
-      <div>
-        <label style="display: flex; align-items: center;">
-          <span>R:&nbsp;</span>
-          <input id="SR" style="width: 100%" type="range" min="0" max="255" step="1" xdh:onevent="Slide" value="0">
-          <span>&nbsp;</span>
-          <input id="NR" xdh:onevent="Adjust" type="number" min="0" max="255" step="5" value="0" style="width: 5ch">
-        </label>
-        <label style="display: flex; align-items: center;">
-          <span>V:&nbsp;</span>
-          <input id="SG" style="width: 100%" type="range" min="0" max="255" step="1" xdh:onevent="Slide" value="0">
-          <span>&nbsp;</span>
-          <input id="NG" xdh:onevent="Adjust" type="number" min="0" max="255" step="5" value="0" style="width: 5ch">
-        </label>
-        <label style="display: flex; align-items: center;">
-          <span>B:&nbsp;</span>
-          <input id="SB" style="width: 100%" type="range" min="0" max="255" step="1" xdh:onevent="Slide" value="0">
-          <span>&nbsp;</span>
-          <input id="NB" xdh:onevent="Adjust" type="number" min="0" max="255" step="5" value="0" style="width: 5ch">
-        </label>
-        <div style="display: flex; justify-content: space-evenly;">
-          <button xdh:onevent="Listen">Listen</button>
-          <button xdh:onevent="Rainbow">Rainbow</button>
-          <button xdh:onevent="Reset">Reset</button>
-        </div>
-      </div>
-    </fieldset>
-    </span>
+    </div>
     <fieldset id="PickerBox" style="display: flex; justify-content: center; flex-direction: column">
       <div id="color-wheel-container" xdh:onevent="Select"></div>
       <label class="label-checkbox" style="display: flex; justify-content: center;">
@@ -502,8 +346,9 @@ BODY = """
         <span>wheel reflects saturation</span>
       </label>
     </fieldset>
-  </fieldset>
-  <input id="Color" type="hidden">
+    <input id="Color" type="hidden">
+  </div>
+</fieldset>
 """
 
 atlastk.launch(globals=globals())

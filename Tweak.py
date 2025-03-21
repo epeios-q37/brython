@@ -11,17 +11,9 @@ state = S_OFF_DUTY
 D_RATIO = "Ratio"
 D_WIDTH = "Width"
 
-# Presets
-P_USER = "None"
-P_BIPEDAL = "Bipedal"
-P_DOG = "Dog"
-P_DIY = "DIY"
-
 # Interface elements
-W_PRESET = "Preset"
-W_HARDWARE_BOX = "HardwareBox"
 W_SWITCH = "Switch"
-W_SETTINGS_BOX = "SettingsBox"
+W_HARDWARE_BOX = "HardwareBox"
 W_MODE = "Mode"
 W_PIN = "Pin"
 W_SDA = "SDA"
@@ -45,42 +37,6 @@ O_FREQ = "TrueFreq"
 O_RATIO = "TrueRatio"
 O_WIDTH = "TrueWidth"
 O_PRESCALE = "TruePrescale"
-
-
-# Default hardware settings
-SETTINGS = {
-  P_USER: {
-    W_MODE: M_NONE,
-    W_OFFSET: "0"
-  },
-  P_BIPEDAL: {
-    W_MODE: M_STRAIGHT,
-    W_PIN: "10",
-    W_WIDTH: "1.5"
-  },
-  P_DOG: {
-    W_MODE: M_PCA9685,
-    W_SOFT: "false",
-    W_SDA: "13",
-    W_SCL: "14",
-    W_OFFSET: "9",
-    W_WIDTH: "1.5"
-  },
-  P_DIY: {
-    W_MODE: M_STRAIGHT,
-    W_SOFT: "false",
-    W_PIN: "12",
-    W_WIDTH: "1.5"
-  }
-}
-
-# Presets by kit ids
-PRESETS = {
-  ucuq.K_UNKNOWN: P_USER,
-  ucuq.K_BIPEDAL: P_BIPEDAL,
-  ucuq.K_DOG: P_DOG,
-  ucuq.K_DIY_SERVOS: P_DIY
-}
 
 
 async def getParams():
@@ -219,7 +175,7 @@ async def initPWM(inputs):
   global pwm
 
   if inputs[W_MODE] == M_STRAIGHT:
-    pwm = ucuq.PWM(inputs[W_PIN])
+    pwm = ucuq.PWM(inputs[W_PIN], freq=50, u16=0).setNS(0)
     pwm.setFreq(inputs[W_FREQ])
   elif inputs[W_MODE] == M_PCA9685:
     i2c = ucuq.SoftI2C if inputs[W_SOFT] else ucuq.I2C
@@ -257,17 +213,23 @@ async def setWidth(width):
   return await getParams()
 
 
+async def updateHardware_(dom, hardware):
+  servo = ucuq.getHardware(hardware, "Servo")
+
+  if servo:
+    await updateSettingsUIFollowingMode_(dom, servo[W_MODE])
+
+    await dom.setValues(servo)
+
+
 async def atk(dom):
-  preset = PRESETS[ucuq.getKitId(await ucuq.ATKConnectAwait(dom, BODY))]
+  infos = await ucuq.ATKConnectAwait(dom, BODY)
 
-  await updateSettingsUIFollowingPreset_(dom, preset)
+  await updateHardware_(dom, ucuq.getKitHardware(infos))
 
-  await dom.setValue(W_PRESET, preset)
-  
   ucuq.addCommand(MC_INIT)
   
   await updateDutyBox(dom)
-  await dom.enableElement(W_HARDWARE_BOX)
 
 
 async def updateSettingsUIFollowingMode_(dom, mode):
@@ -284,20 +246,6 @@ async def updateSettingsUIFollowingMode_(dom, mode):
     raise Exception("Unknown mode!")
 
 
-async def updateSettingsUIFollowingPreset_(dom, preset):
-  setting = SETTINGS[preset]
-
-  await updateSettingsUIFollowingMode_(dom, setting[W_MODE])
-
-  await dom.setValues(setting)
-
-
-async def atkPreset(dom, id):
-  preset = await dom.getValue(id)
-
-  await updateSettingsUIFollowingPreset_(dom, preset)
-
-
 async def atkMode(dom, id):
   await updateSettingsUIFollowingMode_(dom, await dom.getValue(id))
   
@@ -312,14 +260,14 @@ async def atkSwitch(dom, id):
       await dom.setValue(id, False)
     else:
       state = S_PCA9685 if inputs[W_MODE] == M_PCA9685 else S_STRAIGHT
-      await dom.disableElements([W_SETTINGS_BOX, W_PRESET])
+      await dom.disableElement(W_HARDWARE_BOX)
       await updateDuties(dom, await initPWM(inputs))
   else:
     if state:
       pwm.deinit()
       state = S_OFF_DUTY
     await updateDuties(dom)
-    await dom.enableElements([W_SETTINGS_BOX, W_PRESET])
+    await dom.enableElement(W_HARDWARE_BOX)
 
 
 async def atkSelect(dom):
@@ -502,21 +450,8 @@ ATK_HEAD = """
 BODY = """
 <fieldset style="display: flex; flex-direction: column">
   <legend>PWM</legend>
-  <div style="display: flex; justify-content: space-between;">
-    <fieldset id="HardwareBox" style="display: flex; flex-direction: column" disabled="">
-      <legend>Hardware</legend>
+  <div style="display: flex; justify-content: space-between; flex-direction: column;">
       <div style="display: flex; justify-content: space-evenly;">
-        <label>
-          <span>Preset:</span>
-          <select id="Preset" xdh:onevent="Preset">
-            <option value="None">User</option>
-            <optgroup label="Freenove">
-              <option value="Bipedal">Bipedal</option>
-              <option value="Dog">Dog</option>
-            </optgroup>
-            <option value="DIY">DIY</option>
-          </select>
-        </label>
         <span class="switch-container">
           <label class="switch">
             <input id="Switch" type="checkbox" xdh:onevent="Switch">
@@ -524,8 +459,8 @@ BODY = """
           </label>
         </span>
       </div>
-      <fieldset id="SettingsBox" style="display: flex; ">
-        <legend>Settings</legend>
+      <fieldset id="HardwareBox" style="display: flex; ">
+        <legend>Hardware</legend>
         <div style="align-content: center;">
           <select id="Mode" xdh:onevent="Mode">
             <option selected="Selected" disabled="disabled" value="None">Select mode</option>
@@ -565,7 +500,6 @@ BODY = """
           </div>
         </div>
       </fieldset>
-    </fieldset>
   </div>
   <fieldset xdh:radio="duty" id="Duty" xdh:onevent="Select"
     style="display: grid; grid-template-columns: repeat(3, max-content);">

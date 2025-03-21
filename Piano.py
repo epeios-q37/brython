@@ -1,66 +1,50 @@
 import ucuq, atlastk, math
 
-BUZZER_PIN = 2
-LOUDSPEAKER_PIN = 6
-
-# Presets
-P_USER = "User"
-P_BUZZER = "Buzzer"
-P_LOUDSPEAKER = "Loudspeaker"
-P_DIY = "DIY"
-
-
-PINS = {
-  P_BUZZER: 2,
-  P_LOUDSPEAKER: 6,
-  P_DIY: 5
-}
-
 # Widgets
-W_PIN_BOX = "PinBox"
-W_PIN = "Pin"
-W_PRESET = "Preset"
+W_TARGET = "Target"
 W_RATIO_SLIDE = "RatioSlide"
 W_RATIO_VALUE = "RatioValue"
-
-onDuty = False
 
 pwm = None
 baseFreq = 440.0*math.pow(math.pow(2,1.0/12), -16)
 ratio = 0.5
+target = None
 
+hardware = None
 
-async def setPin(dom, preset):
-  if preset != P_USER:
-    await dom.setValue(W_PIN, PINS[preset])
+def turnMainOn(hardware):
+  global pwm
+
+  if hardware == None:
+    raise Exception("Kit with no sound component!")
+  
+  pwm = ucuq.PWM(hardware["Pin"], freq=50, u16=0).setNS(0)
 
 
 async def atk(dom):
-  id = ucuq.getKitId(await ucuq.ATKConnectAwait(dom, BODY))
+  global pwm, target, hardware
 
-  if id == ucuq.K_BIPEDAL:
-    preset = P_BUZZER
-  elif id == ucuq.K_DIY_DISPLAYS:
-    preset = P_DIY
-  else:
-    preset = P_USER
+  infos = await ucuq.ATKConnectAwait(dom, BODY)
 
-  await dom.setValue(W_PRESET, preset)
+  if not pwm:
+    hardware = ucuq.getKitHardware(infos)
 
-  await setPin(dom, preset)  
+    turnMainOn(ucuq.getHardware(hardware, "Buzzer"))
+
+    if "Loudspeaker" in hardware:
+      await dom.disableElement("HideTarget")
+      target = "Buzzer"
+  elif target: 
+    await dom.setValue(W_TARGET, target)
+    await dom.disableElement("HideTarget")
 
 
 async def atkPlay(dom,id):
-  global pwm
-
-  if onDuty:
-    freq = int(baseFreq*math.pow(math.pow(2,1.0/12), int(id)))
-    pwm.setU16(int(ratio*65535))
-    pwm.setFreq(freq)
-    ucuq.sleep(.5)
-    pwm.setU16(0)
-  else:
-    await dom.alert("Please switch on!")
+  freq = int(baseFreq*math.pow(math.pow(2,1.0/12), int(id)))
+  pwm.setU16(int(ratio*65535))
+  pwm.setFreq(freq)
+  ucuq.sleep(.5)
+  pwm.setU16(0)
 
 
 async def atkSetRatio(dom, id):
@@ -71,128 +55,21 @@ async def atkSetRatio(dom, id):
   await dom.setValue(W_RATIO_SLIDE if id == W_RATIO_VALUE else W_RATIO_SLIDE, ratio)
 
 
-async def atkPreset(dom, id):
-  global onDuty, pwm
+async def atkSwitchTarget(dom, id):
+  global target
 
-  await setPin(dom, await dom.getValue(id))
+  target = await dom.getValue(id)
 
-
-async def atkSwitch(dom, id):
-  global onDuty, pwm
-
-  state = await dom.getValue(id) == "true"
-
-  if state:
-    rawPin = await dom.getValue(W_PIN)
-
-    try:
-      pin = int(rawPin)
-    except:
-      await dom.alert("No or bad pin value!")
-      await dom.setValue(id, "false")
-    else:
-      pwm = ucuq.PWM(pin, freq=50, u16=0)
-      onDuty = True
-  else:
-    onDuty = False
-
-  if onDuty:
-    await dom.disableElement(W_PIN_BOX)
-  else:
-    await dom.enableElement(W_PIN_BOX)
+  turnMainOn(ucuq.getHardware(hardware, target))
 
 ATK_HEAD = """
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/beautiful-piano@0.0.6/styles.min.css">
 </link>
 <script src="https://cdn.jsdelivr.net/npm/beautiful-piano@0.0.6/dist/piano.min.js"></script>
-<style>
-  /****************/
-  /* Switch begin */
-  /****************/
-
-  .switch-container {
-    padding-left: 10px;
-    display: flex;
+<style id="HideTarget">
+  #Target {
+    display: none;
   }
-
-  .switch {
-    position: relative;
-    display: inline-block;
-    width: 30px;
-    height: 17px;
-    margin: auto;
-  }
-
-  .switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-
-  .slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    -webkit-transition: .4s;
-    transition: .4s cubic-bezier(0, 1, 0.5, 1);
-    border-radius: 4px;
-  }
-
-  .slider:before {
-    position: absolute;
-    content: "";
-    height: 13px;
-    width: 13px;
-    left: 3px;
-    bottom: 2px;
-    background-color: white;
-    -webkit-transition: .4s;
-    transition: .4s cubic-bezier(0, 1, 0.5, 1);
-    border-radius: 3px;
-  }
-
-  input+.slider {
-    background-color: #c95245;
-  }
-
-  input:checked+.slider {
-    background-color: #52c944;
-  }
-
-  input:focus+.slider {
-    box-shadow: 0 0 4px #7efa70;
-  }
-
-  input:checked+.slider:before {
-    -webkit-transform: translateX(10px);
-    -ms-transform: translateX(10px);
-    transform: translateX(10px);
-  }
-
-  /* Rounded sliders */
-  .slider.round {
-    border-radius: 17px;
-  }
-
-  .slider.round:before {
-    border-radius: 50%;
-  }
-
-  #round {
-    border-radius: 17px;
-  }
-
-  #round:before {
-    border-radius: 50%;
-  }
-
-  /**************/
-  /* Switch end */
-  /**************/
 </style>
 """
 
@@ -281,32 +158,16 @@ BODY = """
     </ul>
   </fieldset>
   <fieldset style="display: flex; justify-content: space-around">
-    <fieldset id="PinBox">
-      <legend>Pin</legend>
-      <select id="Preset" xdh:onevent="Preset">
-        <option value="User">User defined</option>
-        <optgroup label="Freenove Bipedal Robot">
-          <option value="Buzzer">Buzzer</option>
-          <option value="Loudspeaker">Loudspeaker</option>
-        </optgroup>
-        <optgroup label="q37.info">
-          <option value="DIY">DIY</option>
-        </optgroup>
-      </select>
-      <input id="Pin" type="number" size="2" min="1" max="99">
-    </fieldset>
-    <span class="switch-container">
-      <label class="switch">
-        <input id="Switch" type="checkbox" xdh:onevent="Switch">
-        <span class="slider round"></span>
-      </label>
-    </span>
-    <fieldset style="display: flex; align-items: center;">
-      <legend>Ratio</legend>
+    <select id="Target" xdh:onevent="SwitchTarget">
+      <option value="Buzzer">Buzzer</option>
+      <option value="Loudspeaker">Loudspeaker</option>
+    </select>
+    <label style="display: flex;">
+      <span>Ratio: </span>
       <input id="RatioSlide" xdh:onevent="SetRatio" type="range" min="0" max="1" step=".025" value=".5">
       <span>&nbsp;</span>
       <input id="RatioValue" xdh:onevent="SetRatio" type="number" min="0" max="1" step=".025" value="0.5">
-    </fieldset>
+    </label>
   </fieldset>
 </fieldset>
 """
