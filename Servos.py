@@ -90,7 +90,7 @@ async def updateFileList(dom, kitLabel = ""):
 
 
 async def atk(dom):
-  infos = await ucuq.ATKConnectAwait(dom, BODY, True)
+  infos = await ucuq.ATKConnectAwait(dom, BODY)
 
   # await createCohortServos()
 
