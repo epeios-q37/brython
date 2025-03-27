@@ -104,7 +104,7 @@ async def atk(dom):
 
   # await createCohortServos()
 
-  await createServoAWait(ucuq.getDeviceId(infos), ucuq.getDevice(), ucuq.getKitHardware(infos), "")
+  await createServoAwait(ucuq.getDeviceId(infos), ucuq.getDevice(), ucuq.getKitHardware(infos), "")
 
   await displayMacros(dom)
   kitLabel =  ucuq.getKitLabel(infos)
@@ -393,7 +393,6 @@ async def atkLoadFromFile(dom):
 
   show = json.loads(await getGithubFileContentAwait(f"demos/Servos/Shows/{await dom.getValue('Shows')}.json"))
 
-  print(macros)
   macros = show["Macros"]
 
   if "_" in macros:
@@ -424,7 +423,7 @@ async def getServosSetups(target, kitHardware):
   return handleSetupsKits(config["Servos"], kitHardware)
 
 
-async def createServoAWait(deviceId, device, kitHardware, key):
+async def createServoAwait(deviceId, device, kitHardware, key):
   global servos
 
   if key:
@@ -462,7 +461,7 @@ async def createCohortServosAwait(cohort):
     device = ucuq.Device(id=cohort[key])
     infos = await ucuq.getInfosAwait(device)
 
-    await createServoAWait(cohort[key], device, ucuq.getKitHardware(ucuq.getKitLabel(infos)), key)
+    await createServoAwait(cohort[key], device, ucuq.getKitHardware(ucuq.getKitLabel(infos)), key)
 
 ATK_HEAD = """
 <style>
