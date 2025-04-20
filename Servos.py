@@ -81,7 +81,7 @@ SOLOS = {
   "Dog": "Freenove/Dog/ESP32"
 }
 
-TROOPS = ["Cats"]
+COHORTS = ["Cats"]
 
 async def updateFileList(dom, soloId = ""):
   html = ""
@@ -93,10 +93,10 @@ async def updateFileList(dom, soloId = ""):
 
   html = ""
 
-  for troop in TROOPS:
-    html = f"<option value=\"{troop}\" >{troop}</option>\n" + html
+  for cohort in COHORTS:
+    html = f"<option value=\"{cohort}\" >{cohort}</option>\n" + html
 
-  await dom.inner("Troops", html)
+  await dom.inner("Cohorts", html)
 
 
 async def atk(dom):
@@ -546,7 +546,7 @@ BODY = """
       <select id="Shows">
         <optgroup id="Solos" label="Solo">
         </optgroup>
-        <optgroup id="Troops" label="Troop"></optgroup>
+        <optgroup id="Cohorts" label="Cohort"></optgroup>
       </select>
       <button xdh:onevent="LoadFromFile">Load</button>
     </div>

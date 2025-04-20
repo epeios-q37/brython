@@ -7,7 +7,42 @@ import atlastk, ucuq
 
 from random import randint
 
-DICTIONARY_EN = [
+L_FR = 0
+L_EN = 1
+
+LANGUAGE = L_FR
+
+L10N = (
+  (
+    "Vous êtes à court d'essais !",
+    "You've run out of guesses!",
+  ),
+  (
+    "Vous avez fait {errors} erreurs et trouvé {correct} bonnes lettres.",
+    "You had {errors} errors and {correct} correct guesses."
+  ),
+  (
+    "Le mot était '{}'.",
+    "The world was '{}'."
+  ),
+  (
+    "Bravo !",
+    "Congratulations!"
+  ),
+  (
+    "Vous avez gagné ! Félicitations !",
+    "You've won! Congratulations!"
+  ),
+  # 5
+  (
+    "Recommencer",
+    "Restart"
+  )
+)
+
+getL10N = lambda m, *args, **kwargs: L10N[m][LANGUAGE].format(*args, **kwargs)
+
+DICTIONARY_EN = (
   "apple", "banana", "grape", "orange", "mango", "peach", "pineapple", "strawberry",
   "blueberry", "blackberry", "kiwi", "melon", "pear", "plum", "cherry", "coconut",
   "watermelon", "papaya", "apricot", "lemon", "lime", "pomegranate", "fig", "date",
@@ -21,9 +56,9 @@ DICTIONARY_EN = [
   "corn", "millet", "sorghum", "rye", "buckwheat", "spelt", "farro", "teff",
   "chickpea", "lentil", "kidney", "blackbean", "soybean", "pinto", "tofu", "tempeh",
   "seitan", "vegan", "vegetarian", "carnivore", "omnivore", "sustainable", "organic"
-]
+)
 
-DICTIONARY_FR = [
+DICTIONARY_FR = (
   "abondant", "bateau", "chien", "dormir", "fleur", "gantier", "hiver",
   "jardin", "kiwi", "lune", "maison", "nuage", "oiseau", "plage",
   "quai", "rire", "soleil", "table", "usine", "verre", "wagon", "hippopotame",
@@ -45,24 +80,23 @@ DICTIONARY_FR = [
   "saison", "sang", "sauvetage", "secours", "sentier", "film", "service",
   "situation", "village", "spectacle", "sport", "station", "style", "appareil",
   "tendance", "terrain", "concert", "tourisme", "travail", "tribunal", "colifichet"
-]
+)
 
-
-DICTIONARY = DICTIONARY_EN
+DICTIONARY = DICTIONARY_FR if LANGUAGE == L_FR else DICTIONARY_EN
 
 HANGED_MAN = "Head Body LeftArm RightArm LeftLeg RightLeg".split()
 
-unpak = lambda data : zlib.decompress(base64.b64decode(data)).decode()
+unpack = lambda data : zlib.decompress(base64.b64decode(data)).decode()
 
-START_PATTERN = unpak("eJwzMDBPA4NUAyBAZpsZGMApOrENRtmjbNqw03AAACZsma8=")
+START_PATTERN = unpack("eJwzMDBPA4NUAyBAZpsZGMApOrENRtmjbNqw03AAACZsma8=")
 
 HANGED_MAN_PATTERNS = (
-  unpak("eJwzMDBPA4NUAyBAZpsZGMApKrPTEGzjtGQ429wgFc42A9MQdrKBMUlsZL3IZiLbhewGJAeOsocpOw0HAAAjmpxP"),
-  unpak("eJwzMDBPA4NUAyBAZpsZGMApKrPTEGzjtGQ429wgFc42A9MQdrKBMUlsZL3IZiLbhewGmvhxsLENRjY7DQcAANVInME="),
-  unpak("eJzl0EEKgDAMRNErjRSS3ic09z+CUiH+TUFBV84mb9FOQyXPmaEjtEk1XnZebhll1yjbnKdD7ZF5l518izvc2tnpjjPoNIMbvHV0Bmyf/jOtfzsX2QG1wJ1J"),
-  unpak("eJzlkDEOwCAMA79khGTyH0T+/4SitApeGJDaqV58C+YUoHlkYEaZQNbL7Iur9+SGkczomzvqEetb3dS/1OHUubitTa5NUpyZPsVY7OE6q+dwiH54Z2X8m32TC+KXnfY="),
-  unpak("eJzF0EEKwCAMBMAvbQhE/yPm/0+oWInbYg9CS3PJXIybAMl7VbRiGxDtZfu0egkn1LD1frpAt8xveSb/xRl2M4vnOdPmTDPKbJFHskke1tZKDO5BP7xzIkteG3QTutvVSo5dbo69xuOl8Zf9oQ5w1p6c"),
-  unpak("eJy9kEEOwCAIBL+0hoTS9xj5/xNqbAN70INJIxfmoMsAcPmohl7MCkT7mT1ZvAZfaME6+ssVssX8lzN5FjvsOhe3zNTMVCVnDZ9iWuxj6a1G8BA9c+dy25QF5E93W9y/LxK7MMt4lsN1wiDB4+yLegALt59A"),
+  unpack("eJwzMDBPA4NUAyBAZpsZGMApKrPTEGzjtGQ429wgFc42A9MQdrKBMUlsZL3IZiLbhewGJAeOsocpOw0HAAAjmpxP"),
+  unpack("eJwzMDBPA4NUAyBAZpsZGMApKrPTEGzjtGQ429wgFc42A9MQdrKBMUlsZL3IZiLbhewGmvhxsLENRjY7DQcAANVInME="),
+  unpack("eJzl0EEKgDAMRNErjRSS3ic09z+CUiH+TUFBV84mb9FOQyXPmaEjtEk1XnZebhll1yjbnKdD7ZF5l518izvc2tnpjjPoNIMbvHV0Bmyf/jOtfzsX2QG1wJ1J"),
+  unpack("eJzlkDEOwCAMA79khGTyH0T+/4SitApeGJDaqV58C+YUoHlkYEaZQNbL7Iur9+SGkczomzvqEetb3dS/1OHUubitTa5NUpyZPsVY7OE6q+dwiH54Z2X8m32TC+KXnfY="),
+  unpack("eJzF0EEKwCAMBMAvbQhE/yPm/0+oWInbYg9CS3PJXIybAMl7VbRiGxDtZfu0egkn1LD1frpAt8xveSb/xRl2M4vnOdPmTDPKbJFHskke1tZKDO5BP7xzIkteG3QTutvVSo5dbo69xuOl8Zf9oQ5w1p6c"),
+  unpack("eJy9kEEOwCAIBL+0hoTS9xj5/xNqbAN70INJIxfmoMsAcPmohl7MCkT7mT1ZvAZfaME6+ssVssX8lzN5FjvsOhe3zNTMVCVnDZ9iWuxj6a1G8BA9c+dy25QF5E93W9y/LxK7MMt4lsN1wiDB4+yLegALt59A"),
 )
 
 HAPPY_PATTERN = "03c00c30181820044c32524a80018001824181814812442223c410080c3003c0"
@@ -123,8 +157,6 @@ async def showHanged(dom, errors):
     for l in COUNTER_LEDS[isWokwi()][e-1]:
       cRing.setValue(patchRingIndex(l), [0, ringLimiter, 0])
 
-  print(ringLimiter * errors // 6, ringLimiter * ( 6 - errors ) // 6)
-
   for l in FIXED_LEDS[isWokwi()]:
     cRing.setValue(patchRingIndex(l), [ringLimiter * errors // 6, 0, ringLimiter * ( 6 - errors ) // 6])
 
@@ -147,7 +179,7 @@ async def showWord(dom, secretWord, correctGuesses):
 
 async def reset(core, dom):
   core.reset()
-  await dom.inner("", BODY)
+  await dom.inner("", BODY.format(restart=getL10N(5)))
   core.secretWord = randword()
   print(core.secretWord)
   cOLED.fill(0).draw(START_PATTERN, 48, ox=47).show()
@@ -190,13 +222,13 @@ async def atkSubmit(core, dom, id):
     await showWord(dom, core.secretWord, core.correctGuesses)
 
     if correct == len(core.secretWord):
-      cLCD.moveTo(0,1).putString("Congratulations!")
+      cLCD.moveTo(0,1).putString(getL10N(3))
       cOLED.draw(HAPPY_PATTERN, 16, mul=4, ox=32).show()
       for _ in range(3):
         for l in range(ringCount):
           cRing.setValue(patchRingIndex(l),[randint(0,ringLimiter // 3),randint(0,ringLimiter // 3),randint(0,ringLimiter // 3)]).write()
           ucuq.sleep(0.075)
-      await dom.alert("You've won! Congratulations!")
+      await dom.alert(getL10N(4))
       await reset(core, dom)
       return
   else:
@@ -211,17 +243,13 @@ async def atkSubmit(core, dom, id):
   if core.errors >= len(HANGED_MAN):
     await dom.removeClass("Face", "hidden")
     await showWord(dom, core.secretWord, core.secretWord)
-    await dom.alert("\nYou've run out of guesses. \nYou had " + str(core.errors) +
-      " errors and " + str(len(core.correctGuesses)) + " correct guesses. " +
-      "\n\nThe word was '" + core.secretWord + "'.")
+    await dom.alert(f"{getL10N(0)}\n{getL10N(1, errors=core.errors, correct=len(core.correctGuesses))}\n\n{getL10N(2,core.secretWord)}")
     await reset(core, dom)
 
 
 async def atkRestart(core, dom):
   if (core.secretWord != "" ):
-    await dom.alert("You had " + str(core.errors) +
-      " errors and " + str(len(core.correctGuesses)) + " correct guesses. " +
-      "\nThe word was '" + core.secretWord + "'.")
+    await dom.alert(f"{getL10N(1, errors=core.errors, correct=len(core.correctGuesses))}\n\n{getL10N(2,core.secretWord)}")
 
   await reset(core, dom)
 
@@ -806,7 +834,7 @@ BODY = """
     </svg>
   </div>
   <div style="display: table; margin: 10px auto auto auto;">
-    <button xdh:onevent="Restart">Restart</button>
+    <button xdh:onevent="Restart">{restart}</button>
   </div>
 </fieldset>
 """
