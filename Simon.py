@@ -11,27 +11,42 @@ ringCount = 0
 ringOffset = 0
 ringLimiter = 0
 
-EN = {
-  0: "Welcome to",
-  1: "Simon's game!",
-  2: "Reproduce the",
-  3: "sequence...",
-  4: "Well done!",
-  5: "Game over! Click",
-  6: "New to restart!",
-}
+L_FR = 0
+L_EN = 1
 
-FR = {
-  0: "Bienvenue au jeu",
-  1: "'Simon' !",
-  2: "Reproduire la",
-  3: "sequence...",
-  4: "Bravo !",
-  5: "Perdu ! 'New'",
-  6: "pour rejouer !",
-}
+LANGUAGE = None # If None, uses the language of the browser.
 
-STRINGS = EN
+L10N = (
+  (
+    'Bienvenue au jeu', 
+    'Welcome to'
+  ), (
+    "'Simon' !",
+    "Simon's game!"
+  ), (
+    'Reproduire la',
+    'Reproduce the'
+  ), (
+    'sequence...',
+    'sequence...'
+  ), (
+    'Bravo !',
+    'Well done!'
+  ), ( # 5
+    "Perdu ! 'New'",
+    'Game over! Click'
+  ), (
+    'pour rejouer !',
+    'New to restart!'
+  ),
+  (
+    "Nouveau",
+    "New"
+  ),
+  ( "Répéter",
+    "Repeat"
+  )
+)
 
 DIGITS = (
   "708898A8C88870",
@@ -53,6 +68,8 @@ OLED_COEFF = 8
 
 seq = ""
 userSeq = ""
+
+getL10N = lambda m, *args, **kwargs: L10N[m][language].format(*args, **kwargs)
 
 
 def getValuesOfVarsBeginningWith(prefix):
@@ -188,7 +205,11 @@ def turnOLEDOn(hardware):
 
 
 async def atk(dom):
-  infos = await ucuq.ATKConnectAwait(dom, BODY)
+  global language
+
+  language = LANGUAGE if LANGUAGE != None else L_FR if dom.language.startswith("fr") else L_EN
+
+  infos = await ucuq.ATKConnectAwait(dom, BODY.format(new=getL10N(7), repeat=getL10N(8)))
 
   hardware = ucuq.getKitHardware(infos)
 
@@ -240,16 +261,16 @@ async def atkNew():
   cLCD.clear()\
   .backlightOn()\
   .moveTo(0,0)\
-  .putString(STRINGS[0])\
+  .putString(getL10N(0))\
   .moveTo(0,1)\
-  .putString(STRINGS[1])
+  .putString(getL10N(1))
 
   playJingle(LAUNCH_JINGLE)
   ucuq.sleep(0.5)
   cLCD.clear()
 
   seq = random.choice("RGBY")
-  cLCD.clear().moveTo(0,0).putString(STRINGS[2]).moveTo(0,1).putString(STRINGS[3])
+  cLCD.clear().moveTo(0,0).putString(getL10N(2)).moveTo(0,1).putString(getL10N(3))
   number(0)
   ucuq.sleep(.75)
   play(seq)
@@ -269,7 +290,7 @@ async def atkClick(dom, id):
 
   if seq.startswith(userSeq):
     if len(seq) <= len(userSeq):
-      cLCD.moveTo(0,0).putString(STRINGS[4])
+      cLCD.moveTo(0,0).putString(getL10N(4))
       number(None)
       cOLED.draw(HAPPY_MOTIF, 16, mul=4, ox=32).show()
       playJingle(SUCCESS_JINGLE)
@@ -278,7 +299,7 @@ async def atkClick(dom, id):
       ucuq.commit()
       userSeq = ""
       seq += random.choice("RGBY")
-      cLCD.clear().moveTo(0,0).putString(STRINGS[2]).moveTo(0,1).putString(STRINGS[3])
+      cLCD.clear().moveTo(0,0).putString(getL10N(2)).moveTo(0,1).putString(getL10N(3))
       number(None)
       ucuq.commit()
       number(0)
@@ -287,7 +308,7 @@ async def atkClick(dom, id):
     else:
       cLCD.backlightOff()
   else:
-    cLCD.moveTo(0,0).putString(STRINGS[5]).moveTo(0,1).putString(STRINGS[6])
+    cLCD.moveTo(0,0).putString(getL10N(5)).moveTo(0,1).putString(getL10N(6))
     number(len(seq))
     cBuzzer.setFreq(30).setU16(50000)
     number(None)
@@ -315,26 +336,26 @@ ATK_HEAD = """
   #outer-circle {
     background: #385a94;
     border-radius: 50%;
-    height: 400px;
-    width: 400px;
+    height: 360px;
+    width: 360px;
     position: relative;
     border-style: solid;
-    border-width: 10px;
+    border-width: 5px;
     margin: auto;
     box-shadow: 8px 8px 15px 5px #888888;
   }
 
   #G {
     position: absolute;
-    height: 200px;
-    width: 200px;
-    border-radius: 200px 0 0 0;
-    -moz-border-radius: 200px 0 0 0;
-    -webkit-border-radius: 200px 0 0 0;
+    height: 180px;
+    width: 180px;
+    border-radius: 180px 0 0 0;
+    -moz-border-radius: 180px 0 0 0;
+    -webkit-border-radius: 180px 0 0 0;
     background: darkgreen;
     top: 50%;
     left: 50%;
-    margin: -200px 0px 0px -200px;
+    margin: -180px 0px 0px -180px;
     border-style: solid;
     border-width: 5px;
     box-sizing: border-box;
@@ -344,15 +365,15 @@ ATK_HEAD = """
 
   #R {
     position: absolute;
-    height: 200px;
-    width: 200px;
-    border-radius: 0 200px 0 0;
-    -moz-border-radius: 0 200px 0 0;
-    -webkit-border-radius: 0 200px 0 0;
+    height: 180px;
+    width: 180px;
+    border-radius: 0 180px 0 0;
+    -moz-border-radius: 0 180px 0 0;
+    -webkit-border-radius: 0 180px 0 0;
     background: darkred;
     top: 50%;
     left: 50%;
-    margin: -200px 0px 0px 0px;
+    margin: -180px 0px 0px 0px;
     border-style: solid;
     border-width: 5px;
     box-sizing: border-box;
@@ -362,15 +383,15 @@ ATK_HEAD = """
 
   #Y {
     position: absolute;
-    height: 200px;
-    width: 200px;
-    border-radius: 0 0 0 200px;
-    -moz-border-radius: 0 0 0 200px;
-    -webkit-border-radius: 0 0 0 200px;
+    height: 180px;
+    width: 180px;
+    border-radius: 0 0 0 180px;
+    -moz-border-radius: 0 0 0 180px;
+    -webkit-border-radius: 0 0 0 180px;
     background: goldenrod;
     top: 50%;
     left: 50%;
-    margin: 0px -200px 0px -200px;
+    margin: 0px -180px 0px -180px;
     border-style: solid;
     border-width: 5px;
     box-sizing: border-box;
@@ -380,15 +401,15 @@ ATK_HEAD = """
 
   #B {
     position: absolute;
-    height: 200px;
-    width: 200px;
-    border-radius: 0 0 200px 0;
-    -moz-border-radius: 0 0 200px 0;
-    -webkit-border-radius: 0 0 200px 0;
+    height: 180px;
+    width: 180px;
+    border-radius: 0 0 180px 0;
+    -moz-border-radius: 0 0 180px 0;
+    -webkit-border-radius: 0 0 180px 0;
     background: darkblue;
     top: 50%;
     left: 50%;
-    margin: 0px 0px -200px 0px;
+    margin: 0px 0px -180px 0px;
     border-style: solid;
     border-width: 5px;
     box-sizing: border-box;
@@ -400,20 +421,21 @@ ATK_HEAD = """
     position: absolute;
     background: grey;
     border-radius: 50%;
-    height: 200px;
-    width: 200px;
+    height: 180px;
+    width: 180px;
     border-style: solid;
     border-width: 10px;
     top: 50%;
     left: 50%;
-    margin: -100px 0px 0px -100px;
+    margin: -90px 0px 0px -90px;
     box-sizing: border-box;
     -moz-box-sizing: border-box;
     -webkit-box-sizing: border-box;
   }
 
   button {
-    font-size: xx-large;
+    font-size: x-large;
+    margin-top: 5px;
   }
 </style>
 """
@@ -427,16 +449,16 @@ BODY = """
     <div id="Y" xdh:onevent="Click"></div>
     <div id="B" xdh:onevent="Click"></div>
     <div id="inner-circle" style="display: flex;justify-content: center;align-items: center; flex-direction: column;">
-      <div>
-        <button xdh:onevent="New">New</button>
-      </div>
-      <div>
-        <button xdh:onevent="Repeat">Repeat</button>
-      </div>
       <label style="display: flex; background-color: white; margin-top: 1px;">
-        <span>🎵:</span>
+        <span style="font-size: large;">🎵:</span>
         <input type="checkbox" xdh:onevent="SwitchSound" checked="">
       </label>
+      <div>
+        <button xdh:onevent="New">{new}</button>
+      </div>
+      <div>
+        <button xdh:onevent="Repeat">{repeat}</button>
+      </div>
     </div>
   </div>
 </fieldset>
