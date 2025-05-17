@@ -12,35 +12,36 @@ L_EN = 1
 
 LANGUAGE = None
 
-L10N = (
+ATK_L10N = (
   (
-    "Vous êtes à court d'essais !",
+    "en",
+    "fr"
+  ),
+  (
     "You've run out of guesses!",
+    "Vous êtes à court d'essais !",
   ),
   (
+    "You had {errors} errors and {correct} correct guesses.",
     "Vous avez fait {errors} erreurs et trouvé {correct} bonnes lettres.",
-    "You had {errors} errors and {correct} correct guesses."
   ),
   (
+    "The world was '{}'.",
     "Le mot était '{}'.",
-    "The world was '{}'."
   ),
   (
+    "Congratulations!",
     "Bravo !",
-    "Congratulations!"
   ),
   (
+    "You've won! Congratulations!",
     "Vous avez gagné ! Félicitations !",
-    "You've won! Congratulations!"
   ),
-  # 5
   (
+    "Restart",
     "Recommencer",
-    "Restart"
   )
 )
-
-getL10N = lambda m, *args, **kwargs: L10N[m][language].format(*args, **kwargs)
 
 DICTIONARY_EN = (
   "apple", "banana", "grape", "orange", "mango", "peach", "pineapple", "strawberry",
@@ -148,10 +149,6 @@ def patchRingIndex(index):
 
 
 async def showHanged(dom, errors):
-  if (errors):
-    cOLED.draw(HANGED_MAN_PATTERNS[errors-1],48, ox=47).show()
-    await dom.removeClass(HANGED_MAN[errors-1], "hidden")
-
   for e in range(errors+1):
     for l in COUNTER_LEDS[isWokwi()][e-1]:
       cRing.setValue(patchRingIndex(l), [ringLimiter, 0, 0])
@@ -164,6 +161,10 @@ async def showHanged(dom, errors):
     cRing.setValue(patchRingIndex(l), [ringLimiter * errors // 6, 0, ringLimiter * ( 6 - errors ) // 6])
 
   cRing.write()
+
+  if (errors):
+    cOLED.draw(HANGED_MAN_PATTERNS[errors-1],48, ox=47).show()
+    await dom.removeClass(HANGED_MAN[errors-1], "hidden")
 
 
 async def showWord(dom, secretWord, correctGuesses):
@@ -182,7 +183,7 @@ async def showWord(dom, secretWord, correctGuesses):
 
 async def reset(core, dom):
   core.reset()
-  await dom.inner("", BODY.format(restart=getL10N(5)))
+  await dom.inner("", BODY.format(**dom.getL10n(restart=6)))
   core.secretWord = randword(DICTIONNARIES[language])
   print(core.secretWord)
   cOLED.fill(0).draw(START_PATTERN, 48, ox=47).show()
@@ -200,11 +201,12 @@ async def atk(core, dom):
   infos = await ucuq.ATKConnectAwait(dom, "")
   hardware = ucuq.getKitHardware(infos)
 
-  cLCD = ucuq.HD44780_I2C(ucuq.I2C(*ucuq.getHardware(hardware, "LCD", ["SDA", "SCL", "Soft"])), 2, 16)
+  cLCD = ucuq.HD44780_I2C(16, 2, ucuq.I2C(*ucuq.getHardware(hardware, "LCD", ["SDA", "SCL", "Soft"])))
   cOLED =  ucuq.SSD1306_I2C(128, 64, ucuq.I2C(*ucuq.getHardware(hardware, "OLED", ["SDA", "SCL", "Soft"])))
   cBuzzer = ucuq.PWM(*ucuq.getHardware(hardware, "Buzzer", ["Pin"]), freq=50, u16 = 0).setNS(0)
   pin, ringCount, ringOffset, ringLimiter = ucuq.getHardware(hardware, "Ring", ["Pin", "Count", "Offset", "Limiter"])
   cRing = ucuq.WS2812(pin, ringCount)
+  cLCD.backlightOn()
 
   await reset(core,dom)
 
@@ -227,34 +229,35 @@ async def atkSubmit(core, dom, id):
     await showWord(dom, core.secretWord, core.correctGuesses)
 
     if correct == len(core.secretWord):
-      cLCD.moveTo(0,1).putString(getL10N(3))
+      cLCD.moveTo(0,1).putString(dom.getL10n(4))
       cOLED.draw(HAPPY_PATTERN, 16, mul=4, ox=32).show()
       for _ in range(3):
         for l in range(ringCount):
           cRing.setValue(patchRingIndex(l),tuple(map(lambda _: randint(0,ringLimiter // 3), range(3)))).write()
           ucuq.sleep(0.075)
-      await dom.alert(getL10N(4))
+      await dom.alert(dom.getL10n(5))
       await reset(core, dom)
       return
   else:
     core.errors += 1
-    await showHanged(dom, core.errors)
-    cLCD.moveTo(0,1).putString(normalize(''.join([char for char in core.chosen if char not in core.correctGuesses])))
     cBuzzer.setFreq(30).setU16(50000)
-    ucuq.sleep(0.5)
+    id = ucuq.sleepStart()
+    cLCD.moveTo(0,1).putString(normalize(''.join([char for char in core.chosen if char not in core.correctGuesses])))
+    await showHanged(dom, core.errors)
+    ucuq.sleepWait(id, 0.5)
     cBuzzer.setU16(0)
 
   
   if core.errors >= len(HANGED_MAN):
     await dom.removeClass("Face", "hidden")
     await showWord(dom, core.secretWord, core.secretWord)
-    await dom.alert(f"{getL10N(0)}\n{getL10N(1, errors=core.errors, correct=len(core.correctGuesses))}\n\n{getL10N(2,core.secretWord)}")
+    await dom.alert(f"{dom.getL10n(1)}\n{dom.getL10n(2).format(errors=core.errors, correct=len(core.correctGuesses))}\n\n{dom.getL10n(3).format(core.secretWord)}")
     await reset(core, dom)
 
 
 async def atkRestart(core, dom):
   if (core.secretWord != "" ):
-    await dom.alert(f"{getL10N(1, errors=core.errors, correct=len(core.correctGuesses))}\n\n{getL10N(2,core.secretWord)}")
+    await dom.alert(f"{dom.getL10n(2).format( errors=core.errors, correct=len(core.correctGuesses))}\n\n{dom.getL10n(3).format(core.secretWord)}")
 
   await reset(core, dom)
 

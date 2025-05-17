@@ -2,6 +2,61 @@ import os, sys, json
 
 import atlastk
 
+# Languages
+L_FR = 0
+L_EN = 1
+
+ATK_L10N = (
+  (
+    "en",
+    "fr"
+  ),
+  (
+    "Show/hide proxy settings",
+    "Afficher/Masquer réglages proxy"
+  ),
+  (
+    "Save",
+    "Sauver"
+  ),
+  (
+    "Delete",
+    "Effacer"
+  ),
+  (
+    "Enter <em>Token</em> and/or <em>Id</em>",
+    "Saisir <em>Token</em> et/ou <em>Id</em>."
+  ),
+  (
+    "Please enter a value for <em>Token</em>!",
+    "Veuillez saisir une value pour <em>Token</em> !"
+  ),
+  (
+    "Please enter a value for <em>Port</em>!",
+    "Veuillez saisir une value pour <em>Port</em> !"
+  ),
+  (
+    "Please enter a value for <em>Host</em>!",
+    "Veuillez saisir une value pour <em>Host</em> !"
+  ),
+  (
+    "Config file updated!",
+    "Fichier de configuration mis à jour !"
+  ),
+  (
+    "Deleting config file is not possible in development mode!",
+    "Effacer le fichier de configuration n'est pas possible en mode développement !"
+  ),
+  (
+    "Are you sure you want to delete config file?",
+    "Êtes-vous sûr de vouloir supprimer le fichier de configuration ?"
+  ),
+  (
+    "Config file deleted!",
+    "Fichier de configuration supprimé !"
+  )
+)
+
 def isDev():
   return atlastk.isDev()
 
@@ -107,7 +162,7 @@ async def updateUI(dom):
 
 
 async def atk(dom):
-  await dom.inner("", BODY)
+  await dom.inner("", BODY.format(**dom.getL10n(proxy=1, save=2, delete=3, hint=4)))
 
 
   await updateUI(dom)
@@ -121,7 +176,7 @@ async def atkSave(dom):
   device = getConfigDevice()
 
   if not token and K_DEVICE_TOKEN not in device:
-    await dom.alert("Please enter a token value!")
+    await dom.alert(dom.getL10n(5))
     await dom.focus(W_TOKEN)
     return
 
@@ -138,12 +193,12 @@ async def atkSave(dom):
   else:
     if host:
       if not port:
-        await dom.alert("Please enter a port!")
+        await dom.alert(dom.getL10N(6))
         await dom.focus(W_PORT)
         return
     elif port:
       if not host:
-        await dom.alert("Please enter a host!")
+        await dom.alert(dom.getL10n(7))
         await dom.focus(W_HOST)
         return
 
@@ -162,18 +217,18 @@ async def atkSave(dom):
 
   save(config)
 
-  await dom.setValue(W_OUTPUT, "Config file updated!")
+  await dom.setValue(W_OUTPUT, dom.getL10n(8))
 
 
 async def atkDelete(dom):
   if isDev():
-    await dom.alert("You are in development environment, deleting config file is not possible!")
-  elif await dom.confirm("Are you sure you want to delete config file ?"):
+    await dom.alert(dom.getL10n(9))
+  elif await dom.confirm(dom.getL10n(10)):
     delete()
     await dom.removeAttribute(W_TOKEN, "placeholder")
     await dom.setValues({W_TOKEN: "", "Id": ""})
     await dom.focus(W_TOKEN)
-    await dom.setValue(W_OUTPUT, "Config deleted!")
+    await dom.setValue(W_OUTPUT, dom.getL10n(11))
 
 
 ATK_HEAD = """
@@ -187,7 +242,7 @@ ATK_HEAD = """
 BODY = """
 <fieldset>
   <details id="Proxy">
-    <summary style="cursor: pointer">Show/hide proxy settings</summary>
+    <summary style="cursor: pointer">{proxy}</summary>
     <fieldset>
       <legend>Proxy</legend>
       <label style="display: flex; justify-content: space-between; margin: 5px;">
@@ -216,11 +271,11 @@ BODY = """
     </label>
   </fieldset>
   <div style="display: flex; justify-content: space-around; margin: 5px;">
-    <button xdh:onevent="Save">Save</button>
-    <button xdh:onevent="Delete">Delete</button>
+    <button xdh:onevent="Save">{save}</button>
+    <button xdh:onevent="Delete">{delete}</button>
   </div>
   <fieldset>
-    <output id="Output">Enter token and/or id.</output>
+    <output id="Output">{hint}</output>
   </fieldset>
 </fieldset>
 """
