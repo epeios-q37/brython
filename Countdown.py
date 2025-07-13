@@ -94,7 +94,8 @@ HTML_CALCULATION = """
 """
 
 JAUGE_SCRIPT = """
-def jauge(oled, v):
+def jauge(v):
+  oled = {oled}
   l = int(126*v)
   oled.rect(0, 50, 127, 13, 0, True)
   oled.rect(0, 50, l, 13, 1, True)
@@ -109,9 +110,11 @@ async def counter_():
   start = time.ticks_ms()
 
   while not stop and ( elapsed := time.ticks_diff(time.ticks_ms(), start) ) < {delay}:
-    jauge({oled}, 1- (elapsed / {delay}))
-    {lcd}.move_to(13,1)
-    {lcd}.putstr("{{:>3}}".format(({delay} - elapsed)//1000))
+    jauge(1- (elapsed / {delay}))
+
+    if {lcdAvailable}:
+      {lcd}.move_to(13,1)
+      {lcd}.putstr("{{:>3}}".format(({delay} - elapsed)//1000))
     {aw} asyncio.sleep(0)
 """
 
@@ -154,12 +157,16 @@ winner = 0 # if != 0, the role of the player which wins.
 
 class HW():
   def __init__(self, hwDesc):
-    self.oled = ucuq.SSD1306_I2C(128, 64, ucuq.I2C(*ucuq.getHardware(hwDesc, "OLED", ("SDA", "SCL", "Soft"))))
+    self.oled = ucuq.Multi(ucuq.SSD1306_I2C(128, 64, ucuq.I2C(*ucuq.getHardware(hwDesc, "OLED", ("SDA", "SCL", "Soft")))))
     self.lcd = ucuq.HD44780_I2C(16, 2, ucuq.I2C(*ucuq.getHardware(hwDesc, "LCD", ("SDA", "SCL", "Soft"))))
     pin, self.ringCount, self.ringLimiter, self.ringOffset = ucuq.getHardware(hwDesc, "Ring", ("Pin", "Count", "Limiter", "Offset"))
     self.ring = ucuq.WS2812(pin, self.ringCount)
-    ucuq.addCommand(JAUGE_SCRIPT.format(aw="aw" + "ait", delay=DELAY * 1000,oled=self.oled.getObject(),lcd=self.lcd.getObject()))
+    self.oled[0].addCommand(JAUGE_SCRIPT.format(aw="aw" + "ait", delay=DELAY * 1000,oled=self.oled[0].getObject(),lcdAvailable="True",lcd=self.lcd.getObject()))
     self.reset()
+
+  def activateMirror(self, device, infos):
+    self.oled.add(ucuq.SH1106_I2C(128, 64, ucuq.I2C(*ucuq.getHardware(ucuq.getKitHardware(infos), "OLED", ["SDA", "SCL", "Soft"]), device=device )))
+    self.oled[1].addCommand(JAUGE_SCRIPT.format(aw="aw" + "ait", delay=DELAY * 1000,oled=self.oled[1].getObject(),lcdAvailable="False",lcd=self.lcd.getObject()))
 
   def reset(self):
     self.oled.fill(0).show()
@@ -200,7 +207,7 @@ class HW():
     self.oled.rect(0,50,127,13,0).rect(0, 50, l, 13, 1).rect(l, 50, 127-l, 13, 1, False).show()
 
   async def counterAwait(self, winner):
-    ucuq.addCommand("elapsed = 0\nstop = False\nasyncio.create_task(counter_())")
+    hw.oled.addCommand("elapsed = 0\nstop = False\nasyncio.create_task(counter_())")
     elapsed = 0
 
     while not winner() and elapsed <= DELAY:
@@ -208,9 +215,9 @@ class HW():
       elapsed = await ucuq.commitAwait("elapsed") / 1000
 
     if winner():
-      ucuq.addCommand("stop = True")
+      hw.oled.addCommand("stop = True")
 
-    ucuq.addCommand(f"jauge({self.oled.getObject()}, 0)")
+    hw.oled.addCommand("jauge(0)")
 
     if not winner():
       self.ringDisplayCounter(1)
@@ -452,6 +459,16 @@ async def atk(player, dom, id):
   await updateUIAwait(player, dom)
 
 
+async def atkMirror(player, dom, id):
+  if  (await dom.getValue(id)) == "true":
+    if ( await dom.confirm("Please do not confirm unless you know exactly what you are doing!") ):
+      device = ucuq.Device(id="Hotel")
+
+      hw.activateMirror(device, await ucuq.getInfosAwait(device))
+    else:
+      await dom.setValue(id, "false")  
+
+
 async def atkNew(player, dom):
   global cards, toFind, winner
 
@@ -479,10 +496,10 @@ async def atkNew(player, dom):
     if changed:
       hw.lcdDisplayCards(cards, False)
       hw.oledClear()
-      ucuq.sleep(0.1)
+      hw.oled.sleep(0.1)
       hw.oledDisplayNumber(cards[-1])
       if PROD:
-        ucuq.sleep(1)
+        hw.oled.sleep(1)
 
   toFind = cards[-1] + cards[-2] + cards[-3]
 
@@ -491,16 +508,19 @@ async def atkNew(player, dom):
   hw.lcdPutString(0,0,"".center(16))
 
   if PROD:
-    ucuq.sleep(0.5)
+    hw.oled.sleep(0.5)
 
   hw.lcdDisplayCards(cards)
 
   if PROD:
     await ucuq.sleepAwait(8)
 
-  for c in range( 50 if PROD else 0):
+  for c in range( 40 if PROD else 0):
+    chrono = ucuq.getObjectIndice()
+    hw.oled.sleepStart(chrono)
     hw.oledDisplayNumber(random.randint(101,999))
     hw.ringFading(c, (1,0,1))
+    hw.oled.sleepWait(chrono, 0.15)
 
   if PROD and not CHEAT:
     toFind = random.randint(101,999)
@@ -620,7 +640,7 @@ ATK_HEAD = """
   }
 </style>
 <style id="HideNewButton">
-  #New {
+  .starter {
     display: None;
   }
 </style>
@@ -649,7 +669,8 @@ BODY = """
   <output id="Output">&nbsp;</output>
 </fieldset>
 <div style="display: flex; justify-content: center; margin: 5px;">
-  <button id="New" xdh:onevent="New">{new}</button>
+  <button class="starter" xdh:onevent="New">{new}</button>
+  <input class="starter" xdh:onevent="Mirror" type="checkbox" />
 </div>
 <table id="Calculations" style="width: 100%;">
 </table>
