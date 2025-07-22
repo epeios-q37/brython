@@ -104,7 +104,7 @@ async def atk(dom):
 
   # await createCohortServos()
 
-  await createServoAwait(ucuq.getDeviceId(infos), ucuq.getDevice(), ucuq.getKitHardware(infos), "")
+  await createServoAwait(ucuq.getDeviceId(infos), ucuq.getDevice(), infos, "")
 
   await displayMacros(dom)
   kitLabel =  ucuq.getKitLabel(infos)
@@ -404,32 +404,32 @@ async def atkLoadFromFile(dom):
     await createCohortServosAwait(show["Cohort"])
 
 
-def handleSetupsKits(setups, kitHardware):
+def handleSetupsKits(setups, infos):
   for setup in setups:
     hardware = setups[setup]["Hardware"]
 
     if hardware[HARDWARE_MODE_SUBKEY] == M_KIT:
-      setups[setup]["Hardware"] = ucuq.getHardware(kitHardware, hardware["Key"], index = hardware["Index"])
+      setups[setup]["Hardware"] = ucuq.getHardware(infos, hardware["Key"], index = hardware["Index"])
 
   return setups
 
 
-async def getServosSetups(target, kitHardware):
+async def getServosSetups(target, infos):
 
 
   config = json.loads(await getGithubFileContentAwait("demos/Servos/servos.json"))[target]
 
 
-  return handleSetupsKits(config["Servos"], kitHardware)
+  return handleSetupsKits(config["Servos"], infos)
 
 
-async def createServoAwait(deviceId, device, kitHardware, key):
+async def createServoAwait(deviceId, device, infos, key):
   global servos
 
   if key:
     key += '.'
 
-  setups = await getServosSetups(deviceId, kitHardware)
+  setups = await getServosSetups(deviceId, infos)
 
   for setup in setups:
     servo = setups[setup]
@@ -461,7 +461,7 @@ async def createCohortServosAwait(cohort):
     device = ucuq.Device(id=cohort[key])
     infos = await ucuq.getInfosAwait(device)
 
-    await createServoAwait(cohort[key], device, ucuq.getKitHardware(ucuq.getKitLabel(infos)), key)
+    await createServoAwait(cohort[key], device, infos, key)
 
 ATK_HEAD = """
 <style>

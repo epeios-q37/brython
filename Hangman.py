@@ -123,35 +123,34 @@ FIXED_LEDS = (4,0)
 normalize = lambda string : string.ljust(16) if len(string) < 16 else string[-16:]
 
 class HW:
-  def __init__(self, hwDesc):
-    self.lcd = ucuq.HD44780_I2C(16, 2, ucuq.I2C(*ucuq.getHardware(hwDesc, "LCD", ["SDA", "SCL", "Soft"]))).backlightOn()
-    self.oled =  ucuq.Multi(ucuq.SSD1306_I2C(128, 64, ucuq.I2C(*ucuq.getHardware(hwDesc, "OLED", ["SDA", "SCL", "Soft"]))))
-    self.buzzer = ucuq.PWM(*ucuq.getHardware(hwDesc, "Buzzer", ["Pin"]), freq=50, u16 = 0).setNS(0)
-    pin, self.ringCount, self.ringOffset, self.ringLimiter = ucuq.getHardware(hwDesc, "Ring", ["Pin", "Count", "Offset", "Limiter"])
-    self.ring = ucuq.WS2812(pin, self.ringCount)
+  def __init__(self, infos, device=None):
+    self.device, self.lcd, self.oled, self.buzzer, self.smartRGB = ucuq.getBits(infos, "LCD", "OLED", "Buzzer", "SmartRGB", device=device)
+    
+    self.lcd.backlightOn()
+    self.buzzer.setNS(0)
+    self.device.addCommand(BUZZER_SCRIPT)
 
-  def activateMirror(self, device, infos):
-      self.oled.add(ucuq.SH1106_I2C(128, 64, ucuq.I2C(*ucuq.getHardware(ucuq.getKitHardware(infos), "OLED", ["SDA", "SCL", "Soft"]), device=device )))
+    self.smartRGBCount, self.smartRGBOffset, self.smartRGBLimiter = ucuq.getFeatures(infos, "SmartRGB", ["Count", "Offset", "Limiter"]) if self.smartRGB else (1,0,0)
 
-  def ringPatchIndex_(self, index):
-    return ( index + self.ringOffset ) % self.ringCount
+  def smartRGBPatchIndex_(self, index):
+    return ( index + self.smartRGBOffset ) % self.smartRGBCount if self.smartRGB else 0
   
   def update(self, errors):
     for e in range(errors+1):
-      self.ring.setValue(self.ringPatchIndex_(COUNTER_LEDS[e-1]), [self.ringLimiter, 0, 0])
+      self.smartRGB.setValue(self.smartRGBPatchIndex_(COUNTER_LEDS[e-1]), [self.smartRGBLimiter, 0, 0])
 
     for e in range(errors+1, 7):
-      self.ring.setValue(self.ringPatchIndex_(COUNTER_LEDS[e-1]), [0, self.ringLimiter, 0])
+      self.smartRGB.setValue(self.smartRGBPatchIndex_(COUNTER_LEDS[e-1]), [0, self.smartRGBLimiter, 0])
 
     for l in FIXED_LEDS:
-      self.ring.setValue(self.ringPatchIndex_(l), [self.ringLimiter * errors // 6, 0, self.ringLimiter * ( 6 - errors ) // 6])
+      self.smartRGB.setValue(self.smartRGBPatchIndex_(l), [self.smartRGBLimiter * errors // 6, 0, self.smartRGBLimiter * ( 6 - errors ) // 6])
 
-    self.ring.write()
+    self.smartRGB.write()
 
     if (errors):
       self.oled.draw(HANGED_MAN_PATTERNS[errors-1],48, ox=47).show()
     else:
-      self.oled.fill(0).draw(START_PATTERN, 48, ox=47).show()
+      self.oled.draw(START_PATTERN, 48, ox=47).show()
 
   def lcdPutString(self, x, y, string):
     self.lcd.moveTo(x,y).putString(string)
@@ -164,12 +163,12 @@ class HW:
     self.lcd.moveTo(0,1).putString(message)
     self.oled.draw(HAPPY_PATTERN, 16, mul=4, ox=32).show()
     for _ in range(3):
-      for l in range(self.ringCount):
-        self.ring.setValue(self.ringPatchIndex_(l), tuple(map(lambda _: randint(0,self.ringLimiter // 3), range(3)))).write()
-        ucuq.sleep(0.075)
+      for l in range(self.smartRGBCount):
+        self.smartRGB.setValue(self.smartRGBPatchIndex_(l), tuple(map(lambda _: randint(0,self.smartRGBLimiter // 3), range(3)))).write()
+        self.smartRGB.sleep(0.075)
 
   def buzz(self):
-    ucuq.addCommand(f"buzz({self.buzzer.getObject()}, 50, 0.5)")
+    self.device.addCommand(f"buzz({self.buzzer.getObject()}, 50, 0.5)")
 
 class Core:
   def reset(self):
@@ -224,25 +223,11 @@ async def atk(core, dom):
 
   if UCUQ:
     if not hw:
-      infos = await ucuq.ATKConnectAwait(dom, "")
-      hw = HW(ucuq.getKitHardware(infos))
+      hw = ucuq.Multi(HW(await ucuq.ATKConnectAwait(dom, "")))
   else:
     hw = ucuq.Nothing()
 
-  ucuq.addCommand(BUZZER_SCRIPT)
-
   await reset(core,dom)
-
-
-async def atkMirror(core, dom, id):
-  if  (await dom.getValue(id)) == "true":
-    if ( await dom.confirm("Please do not confirm unless you know exactly what you are doing!") ):
-      device = ucuq.Device(id="Hotel")
-
-      hw.activateMirror(device, await ucuq.getInfosAwait(device))
-      await update(dom, core.errors)
-    else:
-      await dom.setValue(id, "false")  
 
 
 async def atkSubmit(core, dom, id):
@@ -286,6 +271,11 @@ async def atkRestart(core, dom):
     await dom.alert(f"{dom.getL10n(2).format( errors=core.errors, correct=len(core.correctGuesses))}\n\n{dom.getL10n(3).format(core.secretWord)}")
 
   await reset(core, dom)
+
+
+async def UCUqXDevice(dom, device):
+  hw.add(HW(await ucuq.getInfosAwait(device), device))
+
 
 ATK_USER = Core
 
@@ -337,6 +327,7 @@ ATK_HEAD = """
 
 BODY = """
 <fieldset>
+  <legend xdh:onevent='dblclick|UCUqXDevice'>Hangman</legend>
   <div style="display: table; margin: 10px auto auto auto;">
     <svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#"
       xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg"
@@ -869,7 +860,6 @@ BODY = """
   </div>
   <div style="display: table; margin: 10px auto auto auto;">
     <button xdh:onevent="Restart">{restart}</button>
-    <input xdh:onevent="Mirror" type="checkbox" />
   </div>
 </fieldset>
 """
