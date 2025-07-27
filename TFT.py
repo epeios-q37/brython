@@ -51,19 +51,19 @@ async def atkCamera(dom, id):
 
 
 async def atkCameraOk(dom):
-  deviceId = dom.getValue("cameras")
+  deviceId = await dom.getValue("cameras")
   if deviceId:
-    dom.executeVoid(f"launchCamera('{deviceId}');")
+    await dom.executeVoid(f"launchCamera('{deviceId}');")
     await dom.disableElement("HidePhoto")
   else:
-    dom.enableElement("Smile")
+    await dom.enableElement("Smile")
 
-  dom.executeVoid("document.getElementById('camera').close().remove();")
+  await dom.executeVoid("document.getElementById('camera').close().remove();")
 
 
 async def atkCameraCancel(dom):
-  dom.executeVoid("document.getElementById('camera').close()")
-  dom.enableElement("Smile")
+  await dom.executeVoid("document.getElementById('camera').close()")
+  await dom.enableElement("Smile")
 
 
 async def atkShoot(dom):
@@ -102,7 +102,7 @@ def test():
 
   hw.clear()
 
-  hw.poly(7, 120, 286, 30, (0, 64, 255), rotate=15, fill=False)
+  hw.poly(5, 120, 286, 30, (0, 64, 255), rotate=15, fill=False)
   hw.sleep()
 
   hw.poly(9, 180, 186, 40, (255, 64, 0), rotate=15)
