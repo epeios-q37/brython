@@ -58,7 +58,7 @@ async def atkCameraOk(dom):
   else:
     await dom.enableElement("Smile")
 
-  await dom.executeVoid("document.getElementById('camera').close().remove();")
+  await dom.executeVoid("document.getElementById('camera').close();document.getElementById('camera').remove();")
 
 
 async def atkCameraCancel(dom):
@@ -67,8 +67,24 @@ async def atkCameraCancel(dom):
 
 
 async def atkShoot(dom):
+  # 'dom.executeStrings(…)' does not work with Google Chrome.
+  # width, height, picture = await dom.executeStrings("takePicture();")
+
+  # result = await dom.executeString("takePicture();")
+
   await dom.executeVoid("takePicture();")
-  width, height, picture = await dom.executeStrings("resizeCanvasAndConvertToRGB565Base64(canvas)")
+
+  result = ""
+
+  while True:
+    partial = await dom.executeString("getNextChunk(30000);")
+
+    if not partial:
+      break
+
+    result += partial
+
+  width, height, picture = result.split(',')
   hw.draw(io.BytesIO(base64.b64decode(picture)), int(width), int(height))
 
 
@@ -212,39 +228,11 @@ ATK_HEAD = """
         navigator.mediaDevices.enumerateDevices()
           .then(function (devices) {
             const cameras = devices.filter(device => device.kind === 'videoinput');
-            console.log(cameras);
-            cameras.forEach(function (camera, index) {
-              console.log(`Camera ${index}: label="${camera.label}", id=${camera.deviceId}`);
-            });
             launchEvent(`${btoa(unescape(encodeURIComponent(JSON.stringify(cameras))))}|BUTTON|click||(Camera)`);
           })
           .catch(function (err) {
             console.error(err.name + ": " + err.message);
           });
-      })
-      .catch((err) => {
-        console.error(`An error occurred: ${err}`);
-      });
-
-    return;
-
-    navigator.mediaDevices.enumerateDevices()
-      .then(function (devices) {
-        const cameras = devices.filter(device => device.kind === 'videoinput');
-        cameras.forEach(function (camera, index) {
-          console.log(`Camera ${index}: label="${camera.label}", id=${camera.deviceId}`);
-        });
-      })
-      .catch(function (err) {
-        console.error(err.name + ": " + err.message);
-      });
-
-
-    navigator.mediaDevices
-      .getUserMedia({ video: true, audio: false })
-      .then((stream) => {
-        video.srcObject = stream;
-        video.play();
       })
       .catch((err) => {
         console.error(`An error occurred: ${err}`);
@@ -255,8 +243,8 @@ ATK_HEAD = """
     navigator.mediaDevices.getUserMedia({
       video: { deviceId: { exact: id } }
     }).then(function (stream) {
-        video.srcObject = stream;
-        video.play();
+      video.srcObject = stream;
+      video.play();
     }).catch(function (err) {
       console.error("Erreur d'accès caméra :", err);
     });
@@ -274,29 +262,8 @@ ATK_HEAD = """
 
   clearPhoto();
 
-  function resizeCanvasImageToJPEG(canvas, maxWidth = 240, maxHeight = 320, quality = 0.92) {
-    const ctx = canvas.getContext('2d');
-    const originalWidth = canvas.width;
-    const originalHeight = canvas.height;
-
-    const scaleWidth = maxWidth / originalWidth;
-    const scaleHeight = maxHeight / originalHeight;
-    const scale = Math.min(scaleWidth, scaleHeight, 1);
-
-    const newWidth = Math.floor(originalWidth * scale);
-    const newHeight = Math.floor(originalHeight * scale);
-
-    const resizedCanvas = document.createElement('canvas');
-    resizedCanvas.width = newWidth;
-    resizedCanvas.height = newHeight;
-    const resizedCtx = resizedCanvas.getContext('2d');
-
-    resizedCtx.drawImage(canvas, 0, 0, originalWidth, originalHeight, 0, 0, newWidth, newHeight);
-
-    const jpegDataURL = resizedCanvas.toDataURL('image/jpeg', quality);
-
-    return jpegDataURL;
-  }
+  var picture = "";
+  var globalConsumeIndex = 0;
 
   function resizeCanvasAndConvertToRGB565Base64(originalCanvas, maxWidth = 240, maxHeight = 320) {
     const originalWidth = originalCanvas.width;
@@ -316,16 +283,14 @@ ATK_HEAD = """
     const pixels = imageData.data;
 
     const rgb565Buffer = new Uint8Array(newWidth * newHeight * 2);
+
     let offset = 0;
     for (let i = 0; i < pixels.length; i += 4) {
       const r = pixels[i];
       const g = pixels[i + 1];
       const b = pixels[i + 2];
 
-      const r5 = (r >> 3) & 0x1F;
-      const g6 = (g >> 2) & 0x3F;
-      const b5 = (b >> 3) & 0x1F;
-      const rgb565 = (r5 << 11) | (g6 << 5) | b5;
+      const rgb565 = (r & 0xF8) << 8 | (g & 0xFC) << 3 | b >> 3;
 
       rgb565Buffer[offset++] = (rgb565 >> 8) & 0xFF;
       rgb565Buffer[offset++] = rgb565 & 0xFF;
@@ -341,9 +306,25 @@ ATK_HEAD = """
 
     const base64String = uint8ToBase64(rgb565Buffer);
 
-    return `"${newWidth}","${newHeight}","${base64String}"`;
+    picture = `${newWidth},${newHeight},${base64String}`;
+    globalConsumeIndex = 0;
   }
 
+  function getNextChunk(chunkSize) {
+    if (!picture || chunkSize <= 0) {
+      return "";
+    }
+
+    if (globalConsumeIndex >= picture.length) {
+      return "";
+    }
+
+    const chunk = picture.substring(globalConsumeIndex, globalConsumeIndex + chunkSize);
+
+    globalConsumeIndex += chunk.length;
+
+    return chunk;
+  }
 
   function takePicture() {
     const context = canvas.getContext("2d");
@@ -352,10 +333,11 @@ ATK_HEAD = """
       canvas.height = height;
       context.drawImage(video, 0, 0, width, height);
 
-      /*    const data = canvas.toDataURL("image/png"); */
-      const data = resizeCanvasImageToJPEG(canvas, 240, 320, 0.92);
+      const data = canvas.toDataURL("image/png");
 
       photo.setAttribute("src", data);
+
+      resizeCanvasAndConvertToRGB565Base64(canvas);
     } else {
       clearPhoto();
     }
@@ -385,6 +367,7 @@ BODY = """
       <img id="photo" alt="The screen capture will appear in this box." />
     </div>
   </span>
+  <output id="Picture" style="display: none;"></output>
 </fieldset>
 <dialog id="camera">
   <select id="cameras">
