@@ -19,7 +19,9 @@ class HW:
 
   def draw(self, picture, width, height):
     self.tft.clear()
-    self.tft.draw(picture, width, height)
+    
+    with io.BytesIO(base64.b64decode(picture)) as stream:
+      self.tft.draw(stream, width, height)
 
 
 hw = None
@@ -32,10 +34,12 @@ async def atk(dom):
   else:
     await dom.inner("", BODY)
 
+  await dom.executeVoid("Go();")
+
 
 async def atkSmile(dom, id):
   await dom.disableElement(id)
-  await dom.executeVoid("Go();allowCamera();")
+  await dom.executeVoid("allowCamera();")
 
 
 async def atkCamera(dom, id):
@@ -74,10 +78,12 @@ async def atkShoot(dom):
 
   await dom.executeVoid("takePicture();")
 
+
+async def atkDisplay(dom):
   result = ""
 
   while True:
-    partial = await dom.executeString("getNextChunk(30000);")
+    partial = await dom.executeString("getNextChunk(25000);")
 
     if not partial:
       break
@@ -85,7 +91,7 @@ async def atkShoot(dom):
     result += partial
 
   width, height, picture = result.split(',')
-  hw.draw(io.BytesIO(base64.b64decode(picture)), int(width), int(height))
+  hw.draw(picture, int(width), int(height))
 
 
 async def atkTest(dom):
@@ -200,6 +206,14 @@ ATK_HEAD = """
   var startButton;
   var allowButton;
 
+  function display(canvas, w, h) {
+    let base64rgb565 = canvasToRGB565Base64(canvas);
+    picture = w + "," + h + "," + base64rgb565;
+    console.log(picture);
+    globalConsumeIndex = 0;
+    launchEvent(`dummy|BUTTON|click||(Display)`);
+  }
+
   function Go() {
     video = document.getElementById("video");
     canvas = document.getElementById("canvas");
@@ -219,6 +233,17 @@ ATK_HEAD = """
       },
       false,
     );
+
+    document.getElementById('fileInput').addEventListener('change', function () {
+      let file = this.files[0];
+      const img = new Image();
+
+      img.onload = function () {
+        resizeImage(img, 240, 320, 0)
+      };
+
+      img.src = URL.createObjectURL(file);
+    });
   }
 
   function allowCamera() {
@@ -250,7 +275,6 @@ ATK_HEAD = """
     });
   }
 
-
   function clearPhoto() {
     const context = canvas.getContext("2d");
     context.fillStyle = "#AAA";
@@ -260,55 +284,8 @@ ATK_HEAD = """
     photo.setAttribute("src", data);
   }
 
-  clearPhoto();
-
   var picture = "";
   var globalConsumeIndex = 0;
-
-  function resizeCanvasAndConvertToRGB565Base64(originalCanvas, maxWidth = 240, maxHeight = 320) {
-    const originalWidth = originalCanvas.width;
-    const originalHeight = originalCanvas.height;
-    const scale = Math.min(maxWidth / originalWidth, maxHeight / originalHeight, 1);
-    const newWidth = Math.floor(originalWidth * scale);
-    const newHeight = Math.floor(originalHeight * scale);
-
-    const resizedCanvas = document.createElement('canvas');
-    resizedCanvas.width = newWidth;
-    resizedCanvas.height = newHeight;
-    const ctx = resizedCanvas.getContext('2d');
-
-    ctx.drawImage(originalCanvas, 0, 0, originalWidth, originalHeight, 0, 0, newWidth, newHeight);
-
-    const imageData = ctx.getImageData(0, 0, newWidth, newHeight);
-    const pixels = imageData.data;
-
-    const rgb565Buffer = new Uint8Array(newWidth * newHeight * 2);
-
-    let offset = 0;
-    for (let i = 0; i < pixels.length; i += 4) {
-      const r = pixels[i];
-      const g = pixels[i + 1];
-      const b = pixels[i + 2];
-
-      const rgb565 = (r & 0xF8) << 8 | (g & 0xFC) << 3 | b >> 3;
-
-      rgb565Buffer[offset++] = (rgb565 >> 8) & 0xFF;
-      rgb565Buffer[offset++] = rgb565 & 0xFF;
-    }
-
-    function uint8ToBase64(u8Arr) {
-      let binary = '';
-      for (let i = 0; i < u8Arr.length; i++) {
-        binary += String.fromCharCode(u8Arr[i]);
-      }
-      return btoa(binary);
-    }
-
-    const base64String = uint8ToBase64(rgb565Buffer);
-
-    picture = `${newWidth},${newHeight},${base64String}`;
-    globalConsumeIndex = 0;
-  }
 
   function getNextChunk(chunkSize) {
     if (!picture || chunkSize <= 0) {
@@ -335,12 +312,73 @@ ATK_HEAD = """
 
       const data = canvas.toDataURL("image/png");
 
-      photo.setAttribute("src", data);
+      photo.onload = function () {
+        resizeImage(photo, 240, 320, 0, display);
+      };
 
-      resizeCanvasAndConvertToRGB565Base64(canvas);
+      photo.src = data;
     } else {
       clearPhoto();
     }
+  }
+
+  function resizeImage(img, maxWidth, maxHeight, rotateAngleDeg, callback) {
+    let needRotate = img.width > img.height;
+    let origW = img.width, origH = img.height;
+    let width, height, rad = 0;
+
+    if (needRotate) {
+      rad = Math.PI / 2;
+      let scale = Math.min(maxWidth / origH, maxHeight / origW, 1);
+      width = Math.round(origW * scale);
+      height = Math.round(origH * scale);
+
+      canvasW = height;
+      canvasH = width;
+    } else {
+      let scale = Math.min(maxWidth / origW, maxHeight / origH, 1);
+      width = Math.round(origW * scale);
+      height = Math.round(origH * scale);
+      canvasW = width;
+      canvasH = height;
+    }
+
+    let canvas = document.createElement('canvas');
+    let ctx = canvas.getContext('2d');
+    canvas.width = canvasW;
+    canvas.height = canvasH;
+    ctx.translate(canvasW / 2, canvasH / 2);
+    if (needRotate) ctx.rotate(rad);
+    ctx.drawImage(
+      img,
+      -width / 2,
+      -height / 2,
+      width,
+      height
+    );
+    display(canvas, canvas.width, canvas.height);
+  }
+
+  function canvasToRGB565Base64(canvas) {
+    let ctx = canvas.getContext("2d");
+    let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    let data = imgData.data;
+    let rgb565 = new Uint8Array(canvas.width * canvas.height * 2);
+    for (let i = 0, j = 0; i < data.length; i += 4, j += 2) {
+      let r = data[i] >> 3;
+      let g = data[i + 1] >> 2;
+      let b = data[i + 2] >> 3;
+      let val = (r << 11) | (g << 5) | b;
+      rgb565[j] = val >> 8;
+      rgb565[j + 1] = val & 0xFF;
+    }
+
+    /* stack overflow with chrome !!! */
+    /* return btoa(String.fromCharCode.apply(null, rgb565)); */
+
+    converted = "";
+    rgb565.forEach(function(byte) {converted += String.fromCharCode(byte)});
+    return btoa(converted);
   }
 </script>
 <style id="HidePhoto">
@@ -352,10 +390,15 @@ ATK_HEAD = """
 
 BODY = """
 <fieldset>
-  <legend xdh:onevent="UCUqXDevice">TFT</legend>
-  <span style="display: flex; justify-content: center; gap: 1rem;">
+  <legend xdh:onevent="dblclick|UCUqXDevice">TFT</legend>
+  <span>
+    <div style="display: flex; justify-content: center; gap: 1rem;">
     <button xdh:onevent="Test">Test</button>
     <button id="Smile" xdh:onevent="Smile">Smile!!!</button>
+    </div>
+    <div style="justify-content: end;">
+    <input type="file" id="fileInput">
+    </div>
   </span>
   <span class="photo">
     <div class="camera">
