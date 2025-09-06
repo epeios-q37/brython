@@ -426,6 +426,8 @@ async def getServosSetups(target, infos):
 async def createServoAwait(deviceId, device, infos, key):
   global servos
 
+  pca = None
+
   if key:
     key += '.'
 

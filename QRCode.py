@@ -18,7 +18,7 @@ async def atkDisplay(dom, id):
 
 
 async def atkSubmit(dom):
-  await dom.executeVoid(f"generate('{await dom.getValue(W_TEXT)}')")
+  await dom.executeVoid(f"QRCodeLaunch('{await dom.getValue(W_TEXT)}')")
   await dom.focus(W_TEXT)
 
 
@@ -34,7 +34,7 @@ async def atkReset(dom, id):
 
 ATK_HEAD = """
 <script>
-  async function generateQrHexStringBrowser(data) {
+  async function QRCodeGenerate(data) {
     const url = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(data)}`;
     const img = new Image();
     img.crossOrigin = "Anonymous";
@@ -66,7 +66,7 @@ ATK_HEAD = """
 
     const width = canvas.width;
     if (width % 4 !== 0) {
-      throw new Error("La largeur du QR code n'est pas un multiple de 4 pixels.");
+      throw new Error("QR code width is not a multiple of 4 pixels.");
     }
 
     let hexString = "";
@@ -81,8 +81,8 @@ ATK_HEAD = """
     return { hexString, width };
   }
 
-  function generate(text) {
-    generateQrHexStringBrowser(text)
+  function QRCodeLAunch(text) {
+    QRCodeGenerate(text)
       .then(({ hexString, width }) => {
         launchEvent(`${hexString}|BUTTON|click||(Display)`);
       })
