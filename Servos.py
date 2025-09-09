@@ -417,7 +417,7 @@ def handleSetupsKits(setups, infos):
 async def getServosSetups(target, infos):
 
 
-  config = json.loads(await getGithubFileContentAwait("demos/Servos/servos.json"))[target]
+  config = json.loads(await getGithubFileContentAwait("demos/assets/servos.json"))[target]
 
 
   return handleSetupsKits(config["Servos"], infos)
