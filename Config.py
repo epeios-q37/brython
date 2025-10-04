@@ -237,6 +237,15 @@ ATK_HEAD = """
     display: none;
   }
 </style>
+<style>
+  body {
+    margin: 0;
+  }
+
+  canvas {
+    display: block;
+  }
+</style>
 """
 
 BODY = """
