@@ -236,7 +236,7 @@ ATK_HEAD = """
   chrtbl[100] = Array(1, 1, 13, 19, 17, 17, 15);
   chrtbl[101] = Array(0, 0, 14, 17, 31, 16, 14);
   chrtbl[102] = Array(6, 9, 8, 28, 8, 8, 8);
-  chrtbl[103] = Array(0, 0, 15, 17, 15, 1, 14);
+  chrtbl[103] = Array(0, 15, 17, 17, 15, 1, 14);
   chrtbl[104] = Array(16, 16, 22, 25, 17, 17, 17);
   chrtbl[105] = Array(4, 0, 12, 4, 4, 4, 14);
   chrtbl[106] = Array(2, 0, 6, 2, 2, 18, 12);
@@ -444,13 +444,13 @@ ATK_HEAD = """
 
   function updateLCD() {
     let text = document.getElementById('lcdtext').value;
-    let lines = text.split('\n').slice(0, nbRows);
+    let lines = text.split('\\n').slice(0, nbRows);
     renderLCD(lines);
   }
 
   function displayLCD(escapedLines) {
     console.log(escapedLines, escapedLines.length);
-    let lines = JSON.parse(escapedLines).split('\n');
+    let lines = JSON.parse(escapedLines).split('\\n');
     console.log(lines);
     renderLCD(lines.slice(0, nbRows));
   }

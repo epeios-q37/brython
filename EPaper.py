@@ -37,6 +37,7 @@ async def atk(dom):
   await ucuq.ATKConnectAwait(dom, BODY)
 
   epaper = ucuq.SSD1680_SPI(7, 1, 2, 3, ucuq.SPI(1, baudrate=2000000, polarity=0, phase=0, sck=4, mosi=6))
+  # epaper = ucuq.SSD1680_SPI( cs=45, dc=46, rst=47, busy=48, spi=ucuq.SPI(1, baudrate=2000000, polarity=0, phase=0, sck=12, mosi=11)  )
   epaper.fill(0).hText("E-paper ready !", 50).hText(datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"), 75).show()
 
   await dom.focus(W_QRC_TEXT)
@@ -46,7 +47,7 @@ async def atk(dom):
 # Called from JS!
 async def atkDisplay(dom, data):
   image = json.loads(data)
-
+  
   epaper.fill(0).draw(image["pattern"], width = image['width'], ox = image['offsetX'], oy = image['offsetY'], mul = image['mul']).show()
 
 
@@ -93,39 +94,10 @@ async def atkTXTCenterY(dom, id):
 async def atkReset(dom, id):
   global epaper
   epaper = ucuq.SSD1680_SPI(7, 1, 2, 3, ucuq.SPI(1, baudrate=2000000, polarity=0, phase=0, sck=4, mosi=6)).fill(0).show()
+#  ucuq.SSD1680_SPI(cs=45, dc=46, rst=47, busy=48,spi=ucuq.SPI(1,baudrate=2000000, polarity=0, phase=0, sck=12, mosi=11)).fill(0).show()
 
 ATK_HEAD = """
 <script>
-  function getHexBitmap(canvas) {
-    let ctx = canvas.getContext("2d");
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const pixels = imageData.data;
-
-    const binaryPixels = [];
-    for (let i = 0; i < pixels.length; i += 4) {
-      const r = pixels[i];
-      const g = pixels[i + 1];
-      const b = pixels[i + 2];
-      const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
-      binaryPixels.push(luminance < 128 ? 1 : 0);
-    }
-
-    if (canvas.width % 4 !== 0) {
-      throw new Error("QR code width is not a multiple of 4 pixels.");
-    }
-
-    let hexString = "";
-    for (let i = 0; i < binaryPixels.length; i += 4) {
-      let val = 0;
-      for (let j = 0; j < 4; j++) {
-        val |= (binaryPixels[i + j] << (3 - j));
-      }
-      hexString += val.toString(16);
-    }
-
-    return hexString;
-  }
-
   async function QRCodeGenerate(data) {
     const url = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(data)}`;
     const img = new Image();
@@ -144,7 +116,7 @@ ATK_HEAD = """
     const ctx = canvas.getContext('2d');
     ctx.drawImage(img, 0, 0);
 
-    return getHexBitmap(canvas);
+    return UCQT_getHexBitmap(canvas);
   }
 
   function QRCodeLaunch(text) {
@@ -217,7 +189,7 @@ ATK_HEAD = """
     canvas = document.getElementById(canvasId);
 
     image = {
-      pattern: getHexBitmap(canvas),
+      pattern: UCQT_getHexBitmap(canvas),
       width: canvas.width,
       offsetX: 0,
       offsetY: 0,
@@ -265,10 +237,10 @@ BODY = """
       <span style="display: flex; flex-direction: column; row-gap: 5px;">
         <label style="display: flex; justify-content: space-between; width: 100%;">
           <span>Width:&nbsp;</span>
-          <input id="TXTWidth" xdh:onevent="input|TXTUpdate" type="number" min="8" max="248" value="248">
+          <input id="TXTWidth" xdh:onevent="input|TXTUpdate" type="number" min="8" max="296" value="248">
         </label> <label style="display: flex; justify-content: space-between; width: 100%;">
           <span>Y:&nbsp;</span>
-          <input id="TXTY" xdh:onevent="input|TXTUpdate" type="number" min="0" max="122" value="0" disabled>
+          <input id="TXTY" xdh:onevent="input|TXTUpdate" type="number" min="0" max="128" value="0" disabled>
         </label>
 
       </span>
@@ -304,7 +276,7 @@ BODY = """
       <input id="TXTFontSize" xdh:onevent="input|TXTUpdate" type="number" min="8" max="150" value="100">
     </span>
     <span style="display: flex; justify-content: center;">
-      <canvas id="TXTCanvas" width="248" height="122" style="border: 1px solid black;"></canvas>
+      <canvas id="TXTCanvas" width="296" height="128" style="border: 1px solid black;"></canvas>
     </span>
     <div style="display: flex; justify-content: space-around; padding-top: 5px;">
       <button xdh:onevent="TXTSubmit">Submit</button>
